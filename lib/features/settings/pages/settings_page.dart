@@ -19,6 +19,7 @@ import '../../instruction_injection/pages/instruction_injection_page.dart';
 import '../../world_book/pages/world_book_page.dart';
 import 'network_proxy_page.dart';
 import 'storage_space_page.dart';
+import 'supabase_config_page.dart';
 import '../../../core/services/storage/storage_usage_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/services/haptics.dart';
@@ -321,6 +322,17 @@ class SettingsPage extends StatelessWidget {
                   );
                 },
               ),
+              _iosDivider(context),
+              _iosNavRow(
+                context,
+                icon: Lucide.Cloud,
+                label: l10n.settingsPageBackupSubtitle, // Will show "Thread Backup" subtitle as label
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SupabaseConfigPage()),
+                  );
+                },
+              ),
             ],
           ),
 
@@ -350,8 +362,7 @@ class SettingsPage extends StatelessWidget {
                   }
                 },
               ),
-              if (settings.requestLogEnabled || settings.flutterLogEnabled) ...[
-                _iosDivider(context),
+              if (settings.requestLogEnabled || settings.flutterLogEnabled) ...[n                _iosDivider(context),
                 _iosNavRow(
                   context,
                   icon: Lucide.FileText,
@@ -374,32 +385,6 @@ class SettingsPage extends StatelessWidget {
                   );
                 },
               ),
-              // _iosDivider(context),
-              // _iosNavRow(
-              //   context,
-              //   icon: Lucide.Share2,
-              //   label: l10n.settingsPageShare,
-              //   onTap: () async {
-              //     // Provide anchor rect from overlay for iPad share sheet
-              //     Rect anchor;
-              //     try {
-              //       final overlay = Overlay.of(context);
-              //       final ro = overlay?.context.findRenderObject();
-              //       if (ro is RenderBox && ro.hasSize) {
-              //         final center = ro.size.center(Offset.zero);
-              //         final global = ro.localToGlobal(center);
-              //         anchor = Rect.fromCenter(center: global, width: 1, height: 1);
-              //       } else {
-              //         final size = MediaQuery.of(context).size;
-              //         anchor = Rect.fromCenter(center: Offset(size.width / 2, size.height / 2), width: 1, height: 1);
-              //       }
-              //     } catch (_) {
-              //       final size = MediaQuery.of(context).size;
-              //       anchor = Rect.fromCenter(center: Offset(size.width / 2, size.height / 2), width: 1, height: 1);
-              //     }
-              //     await Share.share(l10n.settingsShare, sharePositionOrigin: anchor);
-              //   },
-              // ),
             ],
           ),
 
