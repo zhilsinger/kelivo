@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:dio/dio.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../icons/lucide_adapter.dart';
 import '../../../core/providers/settings_provider.dart';
@@ -63,13 +62,13 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
     }
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: const Text('Saved'), duration: const Duration(seconds: 2)),
+        const SnackBar(content: Text('Saved'), duration: Duration(seconds: 2)),
       );
       Navigator.of(context).maybePop();
     }
   }
 
-  Future<void> _clear() async {
+  void _clear() async {
     await context.read<SettingsProvider>().clearSupabaseConfig();
     SupabaseClientService.instance.clear();
     if (mounted) {
@@ -77,7 +76,7 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
       _keyController.clear();
       setState(() => _testResult = null);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: const Text('Cleared'), duration: const Duration(seconds: 2)),
+        const SnackBar(content: Text('Cleared'), duration: Duration(seconds: 2)),
       );
     }
   }
@@ -101,7 +100,6 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Status banner
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -121,9 +119,7 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  settings.supabaseConfigured
-                      ? 'Connected'
-                      : 'Not configured',
+                  settings.supabaseConfigured ? 'Connected' : 'Not configured',
                   style: TextStyle(
                     color: settings.supabaseConfigured
                         ? cs.primary
@@ -135,8 +131,6 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
             ),
           ),
           const SizedBox(height: 16),
-
-          // URL field
           const Text('Server URL',
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
           ),
@@ -152,8 +146,6 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
             autocorrect: false,
           ),
           const SizedBox(height: 16),
-
-          // Anon Key field
           const Text('Anon Key',
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
           ),
@@ -173,8 +165,6 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
             autocorrect: false,
           ),
           const SizedBox(height: 24),
-
-          // Test connection button
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -210,8 +200,6 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
             ),
           ],
           const SizedBox(height: 16),
-
-          // Save & Clear buttons
           Row(
             children: [
               Expanded(
@@ -232,8 +220,6 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
             ],
           ),
           const SizedBox(height: 24),
-
-          // Info section
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
