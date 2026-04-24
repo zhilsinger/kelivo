@@ -240,6 +240,10 @@ class SettingsProvider extends ChangeNotifier {
   static const String _desktopRightSidebarWidthKey =
       'desktop_right_sidebar_width_v1';
 
+  // ===== Supabase Sync Config =====
+  static const String _supabaseUrlKey = 'supabase_url_v1';
+  static const String _supabaseAnonKeyKey = 'supabase_anon_key_v1';
+
   // ===== Network TTS services =====
   List<TtsServiceOptions> _ttsServices = const <TtsServiceOptions>[];
   int _ttsServiceSelected = -1; // -1 => use System TTS
@@ -319,6 +323,14 @@ class SettingsProvider extends ChangeNotifier {
       _desktopTopicPosition == DesktopTopicPosition.right;
   bool _desktopRightSidebarOpen = true;
   bool get desktopRightSidebarOpen => _desktopRightSidebarOpen;
+
+  // ===== Supabase Sync =====
+  String _supabaseUrl = '';
+  String _supabaseAnonKey = '';
+  String get supabaseUrl => _supabaseUrl;
+  String get supabaseAnonKey => _supabaseAnonKey;
+  bool get supabaseConfigured =>
+      _supabaseUrl.isNotEmpty && _supabaseAnonKey.isNotEmpty;
 
   Map<String, ProviderConfig> _providerConfigs = {};
   Map<String, ProviderConfig> get providerConfigs =>
@@ -498,6 +510,9 @@ class SettingsProvider extends ChangeNotifier {
     }
     _themePaletteId = prefs.getString(_themePaletteKey) ?? 'default';
     _useDynamicColor = prefs.getBool(_useDynamicColorKey) ?? true;
+    // Load Supabase config
+    _supabaseUrl = prefs.getString(_supabaseUrlKey) ?? '';
+    _supabaseAnonKey = prefs.getString(_supabaseAnonKeyKey) ?? '';
     var providerConfigsLoaded = false;
     final cfgStr = prefs.getString(_providerConfigsKey);
     if (cfgStr != null && cfgStr.isNotEmpty) {
@@ -1150,6 +1165,25 @@ class SettingsProvider extends ChangeNotifier {
     } catch (_) {
       // ignore
     }
+  }
+
+  // ===== Supabase Config =====
+  Future<void> setSupabaseConfig(String url, String anonKey) async {
+    _supabaseUrl = url.trim();
+    _supabaseAnonKey = anonKey.trim();
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_supabaseUrlKey, _supabaseUrl);
+    await prefs.setString(_supabaseAnonKeyKey, _supabaseAnonKey);
+  }
+
+  Future<void> clearSupabaseConfig() async {
+    _supabaseUrl = '';
+    _supabaseAnonKey = '';
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_supabaseUrlKey);
+    await prefs.remove(_supabaseAnonKeyKey);
   }
 
   Future<void> setTtsServices(List<TtsServiceOptions> v) async {
@@ -2635,7 +2669,7 @@ THINGS YOU CAN DO
 
 TONE & APPROACH
 
-Be warm, patient, and plain-spoken; don't use too many exclamation marks or emoji. Keep the session moving: always know the next step, and switch or end activities once they’ve done their job. And be brief — don't ever send essay-length responses. Aim for a good back-and-forth.
+Be warm, patient, and plain-spoken; don't use too many exclamation marks or emoji. Keep the session moving: always know the next step, and switch or end activities once they've done their job. And be brief — don't ever send essay-length responses. Aim for a good back-and-forth.
 
 IMPORTANT
 
