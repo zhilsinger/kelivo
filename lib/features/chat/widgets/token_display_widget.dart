@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../core/models/model_pricing.dart';
 import 'token_detail_popup.dart';
 
 /// Compact token display that shows "123 tokens" and pops up a detail bubble.
@@ -17,6 +18,7 @@ class TokenDisplayWidget extends StatefulWidget {
     this.completionTokens,
     this.cachedTokens,
     this.durationMs,
+    this.costUsd,
   });
 
   final int totalTokens;
@@ -24,6 +26,7 @@ class TokenDisplayWidget extends StatefulWidget {
   final int? completionTokens;
   final int? cachedTokens;
   final int? durationMs;
+  final double? costUsd;
 
   @override
   State<TokenDisplayWidget> createState() => _TokenDisplayWidgetState();
@@ -55,7 +58,11 @@ class _TokenDisplayWidgetState extends State<TokenDisplayWidget>
   bool get _hasDetailData =>
       (widget.promptTokens != null && widget.promptTokens! > 0) ||
       (widget.completionTokens != null && widget.completionTokens! > 0) ||
-      (widget.durationMs != null && widget.durationMs! > 0);
+      (widget.durationMs != null && widget.durationMs! > 0) ||
+      (widget.costUsd != null && widget.costUsd! > 0);
+
+  bool get _hasCostData =>
+      widget.costUsd != null && widget.costUsd! > 0;
 
   static const double _estimatedPopupHeight = 120;
 
@@ -157,6 +164,7 @@ class _TokenDisplayWidgetState extends State<TokenDisplayWidget>
                 completionTokens: widget.completionTokens,
                 cachedTokens: widget.cachedTokens,
                 durationMs: widget.durationMs,
+                costUsd: widget.costUsd,
               ),
             ),
           ),
@@ -258,8 +266,17 @@ class _TokenDisplayWidgetState extends State<TokenDisplayWidget>
     final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
 
+    // Build compact label with optional cost
+    final String compactLabel;
+    if (_hasCostData) {
+      final costStr = CostCalculator.formatCostCompact(widget.costUsd!);
+      compactLabel = '${l10n.tokenDetailTotalTokens(widget.totalTokens)} · $costStr';
+    } else {
+      compactLabel = l10n.tokenDetailTotalTokens(widget.totalTokens);
+    }
+
     final label = Text(
-      l10n.tokenDetailTotalTokens(widget.totalTokens),
+      compactLabel,
       style: TextStyle(
         fontSize: 11,
         color: cs.onSurface.withValues(alpha: 0.5),
