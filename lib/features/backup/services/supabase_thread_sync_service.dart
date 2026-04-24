@@ -1,11 +1,17 @@
+import 'package:flutter/foundation.dart';
 import '../../../core/services/supabase/supabase_client_service.dart';
 import '../../../core/models/unified_thread.dart';
 
 class SupabaseThreadSyncResult {
   final bool success;
   final String? error;
+  final List<UnifiedThread>? threads;
 
-  const SupabaseThreadSyncResult({required this.success, this.error});
+  const SupabaseThreadSyncResult({
+    required this.success,
+    this.error,
+    this.threads,
+  });
 }
 
 class SupabaseThreadSyncService {
@@ -42,6 +48,7 @@ class SupabaseThreadSyncService {
       );
       return const SupabaseThreadSyncResult(success: true);
     } catch (e) {
+      debugPrint('[SupabaseSync] pushThread failed: $e');
       return SupabaseThreadSyncResult(
         success: false,
         error: e.toString(),
@@ -100,7 +107,8 @@ class SupabaseThreadSyncService {
       }
       return SupabaseThreadSyncResult(
         success: true,
-      ).._threads = threads;
+        threads: threads,
+      );
     } catch (e) {
       return SupabaseThreadSyncResult(
         success: false,
@@ -108,16 +116,4 @@ class SupabaseThreadSyncService {
       );
     }
   }
-}
-
-// Extension to carry data on the result
-extension _ThreadResultExt on SupabaseThreadSyncResult {
-  List<UnifiedThread>? _threads;
-  List<UnifiedThread>? get threads => _threads;
-}
-
-SupabaseThreadSyncResult _pullResult(List<UnifiedThread> threads) {
-  final result = SupabaseThreadSyncResult(success: true);
-  result._threads = threads;
-  return result;
 }
