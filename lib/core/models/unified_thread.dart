@@ -1,29 +1,14 @@
 import 'package:hive/hive.dart';
 
-part 'unified_thread.g.dart';
-
 @HiveType(typeId: 20)
 class UnifiedThread extends HiveObject {
-  @HiveField(0)
   final String id;
-
-  @HiveField(1)
   String title;
-
-  @HiveField(2)
-  final String source; // 'chatgpt', 'gemini', 'perplexity', 'claude', 'kelivo', 'other'
-
-  @HiveField(3)
+  final String source;
   final List<UnifiedMessage> messages;
-
-  @HiveField(4)
   final DateTime createdAt;
-
-  @HiveField(5)
   DateTime updatedAt;
-
-  @HiveField(6)
-  final bool syncedToCloud;
+  bool syncedToCloud;
 
   UnifiedThread({
     required this.id,
@@ -85,21 +70,11 @@ class UnifiedThread extends HiveObject {
   );
 }
 
-@HiveType(typeId: 21)
-class UnifiedMessage extends HiveObject {
-  @HiveField(0)
+class UnifiedMessage {
   final String id;
-
-  @HiveField(1)
-  final String role; // 'user', 'assistant', 'system'
-
-  @HiveField(2)
+  final String role;
   String content;
-
-  @HiveField(3)
   final DateTime createdAt;
-
-  @HiveField(4)
   Map<String, dynamic>? metadata;
 
   UnifiedMessage({
