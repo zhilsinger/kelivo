@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:uuid/uuid.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../core/providers/prompt_queue_provider.dart';
-import '../../../core/models/chat_input_data.dart';
+import '../../../core/models/prompt_queue_item.dart';
 import '../../../theme/design_tokens.dart';
 import '../../../icons/lucide_adapter.dart';
 import '../../../shared/widgets/ios_tactile.dart';
@@ -22,8 +21,6 @@ class PromptQueuePanel extends StatefulWidget {
 }
 
 class _PromptQueuePanelState extends State<PromptQueuePanel> {
-  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -55,9 +52,8 @@ class _PromptQueuePanelState extends State<PromptQueuePanel> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? Colors.white30
-                        : Colors.black26,
+                    color:
+                        isDark ? Colors.white30 : Colors.black26,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -78,7 +74,9 @@ class _PromptQueuePanelState extends State<PromptQueuePanel> {
                     const SizedBox(width: 8),
                     Text(
                       hasItems
-                          ? l10n.promptQueueTitleWithCount(queue.length.toString())
+                          ? l10n.promptQueueTitleWithCount(
+                              queue.length.toString(),
+                            )
                           : l10n.promptQueueTitle,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
@@ -118,17 +116,15 @@ class _PromptQueuePanelState extends State<PromptQueuePanel> {
                           Icon(
                             Icons.inbox_rounded,
                             size: 48,
-                            color: theme.colorScheme.onSurface.withValues(
-                              alpha: 0.25,
-                            ),
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.25),
                           ),
                           const SizedBox(height: 12),
                           Text(
                             l10n.promptQueueEmpty,
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurface.withValues(
-                                alpha: 0.5,
-                              ),
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.5),
                             ),
                           ),
                         ],
@@ -152,11 +148,8 @@ class _PromptQueuePanelState extends State<PromptQueuePanel> {
                         prompt: item,
                         index: index,
                         total: queue.length,
-                        onEdit: () => _showEditDialog(
-                          context,
-                          provider,
-                          item,
-                        ),
+                        onEdit: () =>
+                            _showEditDialog(context, provider, item),
                         onDelete: () => provider.removeFromQueue(item.id),
                       );
                     },
@@ -231,7 +224,7 @@ class _PromptQueuePanelState extends State<PromptQueuePanel> {
   void _showEditDialog(
     BuildContext context,
     PromptQueueProvider provider,
-    QueuedPrompt prompt,
+    PromptQueueItem prompt,
   ) {
     final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: prompt.input.text);
@@ -240,9 +233,11 @@ class _PromptQueuePanelState extends State<PromptQueuePanel> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(l10n.promptQueueEditPrompt),
-        content: IosFormTextField(
+        content: TextField(
           controller: controller,
-          hintText: l10n.promptQueueEditPrompt,
+          decoration: InputDecoration(
+            hintText: l10n.promptQueueEditPrompt,
+          ),
           maxLines: 5,
           minLines: 2,
         ),
@@ -269,7 +264,7 @@ class _PromptQueuePanelState extends State<PromptQueuePanel> {
 
 /// A single tile in the queue panel's list.
 class _QueueItemTile extends StatelessWidget {
-  final QueuedPrompt prompt;
+  final PromptQueueItem prompt;
   final int index;
   final int total;
   final VoidCallback onEdit;
@@ -314,7 +309,8 @@ class _QueueItemTile extends StatelessWidget {
                 child: Icon(
                   Icons.drag_handle_rounded,
                   size: 20,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                  color: theme.colorScheme.onSurface
+                      .withValues(alpha: 0.3),
                 ),
               ),
               // Content
@@ -342,17 +338,15 @@ class _QueueItemTile extends StatelessWidget {
                             Icon(
                               Icons.image_outlined,
                               size: 14,
-                              color: theme.colorScheme.onSurface.withValues(
-                                alpha: 0.5,
-                              ),
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.5),
                             ),
                             const SizedBox(width: 4),
                             Text(
                               '${prompt.input.imagePaths.length}',
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface.withValues(
-                                  alpha: 0.5,
-                                ),
+                                color: theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.5),
                               ),
                             ),
                           ],
@@ -362,17 +356,15 @@ class _QueueItemTile extends StatelessWidget {
                             Icon(
                               Icons.insert_drive_file_outlined,
                               size: 14,
-                              color: theme.colorScheme.onSurface.withValues(
-                                alpha: 0.5,
-                              ),
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.5),
                             ),
                             const SizedBox(width: 4),
                             Text(
                               '${prompt.input.documents.length}',
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface.withValues(
-                                  alpha: 0.5,
-                                ),
+                                color: theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.5),
                               ),
                             ),
                           ],
@@ -384,9 +376,8 @@ class _QueueItemTile extends StatelessWidget {
                     Text(
                       '#${index + 1}',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.35,
-                        ),
+                        color: theme.colorScheme.onSurface
+                            .withValues(alpha: 0.35),
                         fontSize: 11,
                       ),
                     ),
@@ -401,7 +392,8 @@ class _QueueItemTile extends StatelessWidget {
                     size: 18,
                     padding: const EdgeInsets.all(6),
                     onTap: onEdit,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                    color: theme.colorScheme.onSurface
+                        .withValues(alpha: 0.6),
                     icon: Icons.edit_outlined,
                   ),
                   const SizedBox(width: 4),
