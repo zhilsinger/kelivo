@@ -543,26 +543,26 @@ class MessageBuilderService {
         buf.writeln('</memories>');
         buf.writeln('''
 ## Memory Tool
-你是一个无状态的大模型，你无法存储记忆，因此为了记住信息，你需要使用**记忆工具**。
-你可以使用 `create_memory`, `edit_memory`, `delete_memory` 工具创建、更新或删除记忆。
-- 如果记忆中没有相关信息，请使用 create_memory 创建一条新的记录。
-- 如果已有相关记录，请使用 edit_memory 更新内容。
-- 若记忆过时或无用，请使用 delete_memory 删除。
-这些记忆会自动包含在未来的对话上下文中，在<memories>标签内。
-请勿在记忆中存储敏感信息，敏感信息包括：用户的民族、宗教信仰、性取向、政治观点及党派归属、性生活、犯罪记录等。
-在与用户聊天过程中，你可以像一个私人秘书一样**主动的**记录用户相关的信息到记忆里，包括但不限于：
-- 用户昵称/姓名
-- 年龄/性别/兴趣爱好
-- 计划事项等
-- 聊天风格偏好
-- 工作相关
-- 首次聊天时间
+You are a stateless large language model, you cannot store memories, so in order to remember information, you need to use **memory tools**.
+You can use `create_memory`, `edit_memory`, `delete_memory` tools to create, update, or delete memories.
+- If there is no relevant information in memory, use create_memory to create a new record.
+- If there is an existing record, use edit_memory to update the content.
+- If memories are outdated or useless, use delete_memory to delete them.
+These memories are automatically included in future conversation contexts, within <memories> tags.
+Do not store sensitive information in memories; sensitive information includes: user's ethnicity, religious beliefs, sexual orientation, political views and affiliations, sexual life, criminal records, etc.
+In chatting with users, you can actively record user-related information into memories like a personal secretary, including but not limited to:
+- User nickname/name
+- Age/gender/hobbies
+- Planned items, etc.
+- Chat style preferences
+- Work related
+- First chat time
 - ...
-请主动调用工具记录，而不是需要用户要求。
-记忆如果包含日期信息，请包含在内，请使用绝对时间格式，并且当前时间是 ${DateTime.now().toIso8601String()}。
-无需告知用户你已更改记忆记录，也不要在对话中直接显示记忆内容，除非用户主动要求。
-相似或相关的记忆应合并为一条记录，而不要重复记录，过时记录应删除。
-你可以在和用户闲聊的时候暗示用户你能记住东西。
+Please actively use the tools to record, rather than waiting for user requests.
+If memories contain date information, please include it, use absolute time format, and the current time is ${DateTime.now().toIso8601String()}.
+No need to inform the user you have changed memory records, and do not directly display memory content in the conversation unless the user explicitly requests it.
+Similar or related memories should be merged into one record, rather than duplicated records. Outdated records should be deleted.
+You can hint to the user during casual conversation that you can remember things.
 ''');
         _appendToSystemMessage(apiMessages, buf.toString());
       }
@@ -580,7 +580,7 @@ class MessageBuilderService {
         if (relevantChats.isNotEmpty) {
           final sb = StringBuffer();
           sb.writeln('<recent_chats>');
-          sb.writeln('这是用户最近的一些对话标题和摘要，你可以参考这些内容了解用户偏好和关注点');
+          sb.writeln('These are some recent conversation titles and summaries. You can refer to them to understand user preferences and areas of interest.');
           for (final c in relevantChats) {
             sb.writeln('<conversation>');
             // Format: timestamp: title || summary
@@ -898,7 +898,8 @@ class MessageBuilderService {
   }
 
   /// Helper to append content to the system message (or create one if missing).
-  void _appendToSystemMessage(
+  /// Public so external services (e.g. ChatOrchestratorService) can use it.
+  void appendToSystemMessage(
     List<Map<String, dynamic>> apiMessages,
     String content,
   ) {
