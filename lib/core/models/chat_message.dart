@@ -70,6 +70,9 @@ class ChatMessage extends HiveObject {
   @HiveField(19)
   final int? durationMs;
 
+  @HiveField(20)
+  final double? costUsd;
+
   ChatMessage({
     String? id,
     required this.role,
@@ -91,6 +94,7 @@ class ChatMessage extends HiveObject {
     this.completionTokens,
     this.cachedTokens,
     this.durationMs,
+    this.costUsd,
   }) : id = id ?? const Uuid().v4(),
        timestamp = timestamp ?? DateTime.now(),
        groupId = groupId ?? id,
@@ -117,6 +121,9 @@ class ChatMessage extends HiveObject {
     int? completionTokens,
     int? cachedTokens,
     int? durationMs,
+    double? costUsd,
+    // Sentinel for explicitly clearing costUsd back to null
+    Object? costUsdClear,
   }) {
     return ChatMessage(
       id: id ?? this.id,
@@ -140,8 +147,14 @@ class ChatMessage extends HiveObject {
       completionTokens: completionTokens ?? this.completionTokens,
       cachedTokens: cachedTokens ?? this.cachedTokens,
       durationMs: durationMs ?? this.durationMs,
+      costUsd: identical(costUsdClear, _costUsdClearSentinel)
+          ? null
+          : costUsd ?? this.costUsd,
     );
   }
+
+  // Sentinel for copyWith to allow explicit null on costUsd
+  static final Object _costUsdClearSentinel = Object();
 
   Map<String, dynamic> toJson() {
     return {
@@ -165,6 +178,7 @@ class ChatMessage extends HiveObject {
       'completionTokens': completionTokens,
       'cachedTokens': cachedTokens,
       'durationMs': durationMs,
+      'costUsd': costUsd,
     };
   }
 
@@ -194,6 +208,7 @@ class ChatMessage extends HiveObject {
       completionTokens: json['completionTokens'] as int?,
       cachedTokens: json['cachedTokens'] as int?,
       durationMs: json['durationMs'] as int?,
+      costUsd: (json['costUsd'] as num?)?.toDouble(),
     );
   }
 }
