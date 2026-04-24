@@ -63,3 +63,10 @@ internationalization.md
 /.agent/
 /.agents/
 /skills-lock.json
+
+# Keystore and signing files (side-by-side dev fork)
+keys/
+android/key.properties
+*.jks
+*.keystore
+*.base64

@@ -74,6 +74,21 @@ Pull Requests and Issues are welcome!
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
+## 🔧 Android Dev Fork Build
+
+This fork uses Android package ID `com.zeke.kelivodev` and app label **Kelivo Dev** so it can be
+installed side-by-side with the original Kelivo app. Release APK builds require four
+[GitHub Actions secrets](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions):
+
+| Secret | Description |
+|---|---|
+| `ANDROID_KEYSTORE_BASE64` | Base64-encoded release keystore file |
+| `ANDROID_KEYSTORE_PASSWORD` | Keystore password |
+| `ANDROID_KEY_ALIAS` | Key alias name |
+| `ANDROID_KEY_PASSWORD` | Key password |
+
+Trigger the workflow at **Actions → Android Release APK → Run workflow**.
+
 ## ❤️ Acknowledgements
 
 Special thanks to the [RikkaHub](https://github.com/re-ovo/rikkahub) project for the UI design inspiration. Kelivo's interface design is heavily inspired by RikkaHub's beautiful and practical design.

@@ -1,0 +1,98 @@
+name: Android Release APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Show Flutter version
+        run: flutter --version
+
+      - name: Restore Android keystore
+        run: |
+          mkdir -p keys
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > keys/kelivo-release-key.jks
+
+      - name: Create Android key.properties
+        run: |
+          cat > android/key.properties <<EOF
+          storeFile=../keys/kelivo-release-key.jks
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          EOF
+
+      - name: Verify signing files exist
+        run: |
+          test -f keys/kelivo-release-key.jks
+          test -f android/key.properties
+
+      - name: Flutter clean
+        run: flutter clean
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Build universal release APK
+        run: flutter build apk --release
+
+      - name: Build split release APKs
+        run: flutter build apk --release --split-per-abi
+
+      - name: Locate Android SDK build tools
+        id: buildtools
+        run: |
+          BUILD_TOOLS_DIR=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -n 1)
+          echo "dir=$BUILD_TOOLS_DIR" >> "$GITHUB_OUTPUT"
+          echo "Using Android build tools: $BUILD_TOOLS_DIR"
+
+      - name: Verify universal APK signature
+        run: |
+          "${{ steps.buildtools.outputs.dir }}/apksigner" verify --verbose --print-certs build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Verify arm64 APK signature
+        run: |
+          "${{ steps.buildtools.outputs.dir }}/apksigner" verify --verbose --print-certs build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+
+      - name: Print APK badging
+        run: |
+          "${{ steps.buildtools.outputs.dir }}/aapt" dump badging build/app/outputs/flutter-apk/app-release.apk | head -n 40
+          "${{ steps.buildtools.outputs.dir }}/aapt" dump badging build/app/outputs/flutter-apk/app-arm64-v8a-release.apk | head -n 40
+
+      - name: Rename APK artifacts
+        run: |
+          mkdir -p release-artifacts
+          cp build/app/outputs/flutter-apk/app-release.apk release-artifacts/Kelivo-Dev-universal-release.apk
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk release-artifacts/Kelivo-Dev-arm64-v8a-release.apk
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk release-artifacts/Kelivo-Dev-armeabi-v7a-release.apk
+          cp build/app/outputs/flutter-apk/app-x86_64-release.apk release-artifacts/Kelivo-Dev-x86_64-release.apk
+
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kelivo-dev-android-release-apks
+          path: release-artifacts/*.apk
