@@ -15,6 +15,7 @@ import '../../../core/providers/assistant_provider.dart';
 import '../../../core/providers/quick_phrase_provider.dart';
 import '../../../core/providers/instruction_injection_provider.dart';
 import '../../../core/providers/world_book_provider.dart';
+import '../../../core/providers/prompt_queue_provider.dart';
 import '../../../core/models/quick_phrase.dart';
 import '../../../core/models/chat_input_data.dart';
 import '../../../core/models/chat_message.dart';
@@ -48,6 +49,7 @@ import '../widgets/message_list_view.dart';
 import '../widgets/chat_input_section.dart';
 import '../widgets/chat_selection_app_bar.dart';
 import '../widgets/chat_selection_export_bar.dart';
+import '../widgets/prompt_queue_panel.dart';
 import '../utils/model_display_helper.dart';
 import '../utils/chat_layout_constants.dart';
 import '../controllers/home_page_controller.dart';
@@ -170,7 +172,6 @@ class _HomePageState extends State<HomePage>
 
   void _onDrawerValueChanged() {
     _controller.onDrawerValueChanged(_drawerController.value);
-    // Close assistant picker when drawer closes
     if (_drawerController.value < 0.95) {
       final sp = context.read<SettingsProvider>();
       if (!sp.keepAssistantListExpandedOnSidebarClose) {
@@ -216,6 +217,24 @@ class _HomePageState extends State<HomePage>
       _controller.forceScrollToBottomSoon(animate: false);
       _inputFocus.requestFocus();
     });
+  }
+
+  // ============================================================================
+  // Queue Panel
+  // ============================================================================
+
+  void _showQueuePanel() {
+    _controller.dismissKeyboard();
+    final cs = Theme.of(context).colorScheme;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: cs.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => const PromptQueuePanel(),
+    );
   }
 
   // ============================================================================
@@ -339,9 +358,7 @@ class _HomePageState extends State<HomePage>
   Widget _buildMobileBody(BuildContext context, ColorScheme cs) {
     return Stack(
       children: [
-        // Background
         _buildChatBackground(context, cs),
-        // Main content
         Padding(
           padding: EdgeInsets.only(
             top: kToolbarHeight + MediaQuery.paddingOf(context).top,
@@ -395,7 +412,6 @@ class _HomePageState extends State<HomePage>
                   onToggleThinkingContent: _controller.toggleThinkingContent,
                 )
               else
-                // Input bar
                 NotificationListener<SizeChangedLayoutNotification>(
                   onNotification: (n) {
                     WidgetsBinding.instance.addPostFrameCallback(
@@ -413,7 +429,6 @@ class _HomePageState extends State<HomePage>
             ],
           ),
         ),
-        // Scroll navigation buttons
         _buildScrollButtons(),
       ],
     );
@@ -725,7 +740,6 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  /// Map persisted truncateIndex (raw message count) to collapsed index.
   int _computeTruncCollapsedIndex() {
     final int truncRaw = _controller.currentConversation?.truncateIndex ?? -1;
     if (truncRaw <= 0) return -1;
@@ -904,6 +918,8 @@ class _HomePageState extends State<HomePage>
       onLongPressLearning: _showLearningPromptSheet,
       onClearContext: _controller.clearContext,
       onCompressContext: _handleDesktopCompressContext,
+      // Queue panel
+      onOpenQueuePanel: _showQueuePanel,
     );
   }
 
@@ -988,7 +1004,7 @@ class _HomePageState extends State<HomePage>
   }
 
   // ============================================================================
-  // Action Handlers (UI-specific, not in controller)
+  // Action Handlers
   // ============================================================================
 
   void _openSearchSettings() {
