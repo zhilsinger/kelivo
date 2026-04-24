@@ -37,10 +37,7 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
   Future<void> _testConnection() async {
     final url = _urlController.text.trim();
     final key = _keyController.text.trim();
-    if (url.isEmpty || key.isEmpty) {
-      _showSnackbar('Please enter both URL and Anon Key');
-      return;
-    }
+    if (url.isEmpty || key.isEmpty) return;
 
     setState(() {
       _testing = true;
@@ -71,26 +68,23 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
     final key = _keyController.text.trim();
     await context.read<SettingsProvider>().setSupabaseConfig(url, key);
     if (mounted) {
-      _showSnackbar('Supabase configuration saved');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Saved'), duration: const Duration(seconds: 2)),
+      );
       Navigator.of(context).maybePop();
     }
   }
 
-  void _clear() async {
+  Future<void> _clear() async {
     await context.read<SettingsProvider>().clearSupabaseConfig();
     if (mounted) {
       _urlController.clear();
       _keyController.clear();
       setState(() => _testResult = null);
-      _showSnackbar('Supabase configuration cleared');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Cleared'), duration: const Duration(seconds: 2)),
+      );
     }
-  }
-
-  void _showSnackbar(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
-    );
   }
 
   @override
