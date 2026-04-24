@@ -2547,6 +2547,7 @@ class _ChatMessageWidgetState extends State<ChatMessageWidget> {
                             completionTokens: widget.message.completionTokens,
                             cachedTokens: widget.message.cachedTokens,
                             durationMs: widget.message.durationMs,
+                            costUsd: widget.message.costUsd,
                           ),
                         ],
                       ],
