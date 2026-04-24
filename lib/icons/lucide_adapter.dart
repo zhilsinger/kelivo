@@ -165,4 +165,8 @@ class Lucide {
   static const IconData package2 = lucide.LucideIcons.package2;
   static const IconData workflow = lucide.LucideIcons.workflow;
   static const IconData clock = lucide.LucideIcons.clock;
+  static const IconData Cloud = lucide.LucideIcons.cloud;
+  static const IconData CloudOff = lucide.LucideIcons.cloudOff;
+  static const IconData Wifi = lucide.LucideIcons.wifi;
+  static const IconData Save = lucide.LucideIcons.save;
 }
