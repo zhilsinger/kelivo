@@ -43,6 +43,7 @@ class StreamingContentNotifier {
     int? completionTokens,
     int? cachedTokens,
     int? durationMs,
+    double? costUsd,
   }) {
     final notifier = _notifiers[messageId];
     if (notifier != null) {
@@ -63,6 +64,7 @@ class StreamingContentNotifier {
         completionTokens: completionTokens ?? current.completionTokens,
         cachedTokens: cachedTokens ?? current.cachedTokens,
         durationMs: durationMs ?? current.durationMs,
+        costUsd: costUsd ?? current.costUsd,
       );
     }
   }
@@ -96,6 +98,7 @@ class StreamingContentNotifier {
         completionTokens: current.completionTokens,
         cachedTokens: current.cachedTokens,
         durationMs: current.durationMs,
+        costUsd: current.costUsd,
       );
     }
   }
@@ -127,6 +130,7 @@ class StreamingContentNotifier {
         completionTokens: current.completionTokens,
         cachedTokens: current.cachedTokens,
         durationMs: current.durationMs,
+        costUsd: current.costUsd,
       );
     }
   }
@@ -149,6 +153,7 @@ class StreamingContentNotifier {
         completionTokens: current.completionTokens,
         cachedTokens: current.cachedTokens,
         durationMs: current.durationMs,
+        costUsd: current.costUsd,
       );
     }
   }
@@ -191,6 +196,7 @@ class StreamingContentData {
     this.completionTokens,
     this.cachedTokens,
     this.durationMs,
+    this.costUsd,
   });
 
   final String content;
@@ -214,6 +220,9 @@ class StreamingContentData {
   final int? cachedTokens;
   final int? durationMs;
 
+  /// Computed cost in USD.
+  final double? costUsd;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -232,7 +241,8 @@ class StreamingContentData {
           promptTokens == other.promptTokens &&
           completionTokens == other.completionTokens &&
           cachedTokens == other.cachedTokens &&
-          durationMs == other.durationMs;
+          durationMs == other.durationMs &&
+          costUsd == other.costUsd;
 
   @override
   int get hashCode =>
@@ -249,5 +259,6 @@ class StreamingContentData {
       promptTokens.hashCode ^
       completionTokens.hashCode ^
       cachedTokens.hashCode ^
-      durationMs.hashCode;
+      durationMs.hashCode ^
+      costUsd.hashCode;
 }
