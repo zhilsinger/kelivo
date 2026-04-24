@@ -977,7 +977,7 @@
   "searchSettingsSheetWebSearchTitle": "網路搜尋",
   "searchSettingsSheetWebSearchDescription": "是否啟用網頁搜尋",
   "searchSettingsSheetOpenSearchServicesTooltip": "開啟搜尋服務設定",
-  "searchSettingsSheetNoServicesMessage": "暫無可用服務，請先在\"搜尋服務\"中新增",
+  "searchSettingsSheetNoServicesMessage": "暫無可用服務，請先在"搜尋服務"中新增",
   "aboutPageEasterEggMessage": "\n（好吧現在還沒彩蛋）",
   "aboutPageEasterEggButton": "好的",
   "aboutPageAppName": "Kelivo",
@@ -1494,11 +1494,161 @@
   "toolApprovalDeny": "拒絕",
   "toolApprovalDenyTitle": "拒絕工具調用",
   "toolApprovalDenyHint": "原因（可選）",
-  "toolApprovalDeniedMessage": "工具調用 \"{toolName}\" 已被使用者拒絕。原因：{reason}",
+  "toolApprovalDeniedMessage": "工具調用 "{toolName}" 已被使用者拒絕。原因：{reason}",
   "tokenDetailPromptTokens": "{count} tokens",
   "tokenDetailPromptTokensWithCache": "{count} tokens ({cached} cached)",
   "tokenDetailCompletionTokens": "{count} tokens",
   "tokenDetailSpeed": "{value} tok/s",
   "tokenDetailDuration": "{value}s",
-  "tokenDetailTotalTokens": "{count} tokens"
+  "tokenDetailTotalTokens": "{count} tokens",
+  "settingsPageSupabaseSync": "Supabase 同步",
+  "settingsPageSupabaseSyncSubtitle": "匯入的對話自動同步到 Supabase 雲端",
+  "supabaseSyncSuccess": "對話已同步到雲端",
+  "supabaseSyncFailed": "雲端同步失敗：{error}",
+  "@supabaseSyncFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "threadBackupTitle": "對話備份",
+  "threadBackupImport": "匯入",
+  "threadBackupExportAll": "匯出全部",
+  "threadBackupDeleteAll": "刪除全部",
+  "threadBackupCancel": "取消",
+  "threadBackupConfirm": "確認",
+  "threadBackupDismiss": "忽略",
+  "threadBackupImportFromFile": "從檔案匯入",
+  "threadBackupImportFromFileSubtitle": "選擇 JSON 匯出檔案",
+  "threadBackupPasteJson": "貼上 JSON",
+  "threadBackupPasteJsonSubtitle": "直接貼上匯出的 JSON",
+  "threadBackupChooseSource": "選擇來源...",
+  "threadBackupChooseSourceSubtitle": "手動選擇來源平台",
+  "threadBackupSummary": "來自 {sources} 個來源的 {count} 個對話",
+  "@threadBackupSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "sources": {
+        "type": "int"
+      }
+    }
+  },
+  "threadBackupNoThreads": "暫無備份的對話",
+  "threadBackupNoThreadsHint": "點 + 從 ChatGPT、Gemini 等匯入",
+  "threadBackupConfirmImport": "{count} 個新對話準備匯入",
+  "@threadBackupConfirmImport": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "threadBackupDuplicatesSkipped": " （{count} 個重複已跳過）",
+  "@threadBackupDuplicatesSkipped": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "threadBackupImportSuccess": "成功匯入 {count} 個對話",
+  "@threadBackupImportSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "threadBackupImportFailed": "匯入失敗：{error}",
+  "@threadBackupImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "threadBackupExportSuccess": "已匯出 {count} 個對話到檔案",
+  "@threadBackupExportSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "threadBackupExportFailed": "匯出失敗：{error}",
+  "@threadBackupExportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "threadBackupDeleteConfirmTitle": "刪除對話",
+  "threadBackupDeleteConfirmContent": "從備份中移除這個對話？不會影響原始聊天應用。",
+  "threadBackupDeleteAllConfirmTitle": "刪除全部對話",
+  "threadBackupDeleteAllConfirmContent": "移除所有備份的對話？此操作不可撤銷。",
+  "threadBackupDelete": "刪除",
+  "threadBackupDeleteAll": "刪除全部",
+  "threadBackupSelectSourceTitle": "選擇來源平台",
+  "threadBackupPasteJsonTitle": "貼上匯出 JSON",
+  "threadBackupPasteJsonHint": "在此貼上匯出 JSON...",
+  "threadBackupMessagesCount": "{count} 條訊息",
+  "@threadBackupMessagesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "threadBackupSourceChatGPT": "ChatGPT",
+  "threadBackupSourceGemini": "Gemini",
+  "threadBackupSourcePerplexity": "Perplexity",
+  "threadBackupSourceClaude": "Claude",
+  "threadBackupSourceKelivo": "Kelivo",
+  "threadBackupSourceOther": "其他",
+  "threadBackupDetailSource": "來源：{source}",
+  "@threadBackupDetailSource": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "threadBackupDetailMessages": "訊息數：{count}",
+  "@threadBackupDetailMessages": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "threadBackupDetailCreated": "建立時間：{date}",
+  "@threadBackupDetailCreated": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "threadBackupDetailUpdated": "更新時間：{date}",
+  "@threadBackupDetailUpdated": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "threadBackupDetailRecentMessages": "最近訊息：",
+  "threadBackupDetailMoreMessages": "... 還有 {count} 條訊息",
+  "@threadBackupDetailMoreMessages": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "threadBackupDetailClose": "關閉"
 }

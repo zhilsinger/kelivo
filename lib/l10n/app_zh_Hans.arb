@@ -1023,7 +1023,7 @@
   "searchSettingsSheetWebSearchTitle": "网络搜索",
   "searchSettingsSheetWebSearchDescription": "是否启用网页搜索",
   "searchSettingsSheetOpenSearchServicesTooltip": "打开搜索服务设置",
-  "searchSettingsSheetNoServicesMessage": "暂无可用服务，请先在\"搜索服务\"中添加",
+  "searchSettingsSheetNoServicesMessage": "暂无可用服务，请先在"搜索服务"中添加",
   "aboutPageEasterEggMessage": "\n（好吧现在还没彩蛋）",
   "aboutPageEasterEggButton": "好的",
   "aboutPageAppName": "Kelivo",
@@ -1498,11 +1498,161 @@
   "toolApprovalDeny": "拒绝",
   "toolApprovalDenyTitle": "拒绝工具调用",
   "toolApprovalDenyHint": "原因（可选）",
-  "toolApprovalDeniedMessage": "工具调用 \"{toolName}\" 已被用户拒绝。原因：{reason}",
+  "toolApprovalDeniedMessage": "工具调用 "{toolName}" 已被用户拒绝。原因：{reason}",
   "tokenDetailPromptTokens": "{count} tokens",
   "tokenDetailPromptTokensWithCache": "{count} tokens ({cached} cached)",
   "tokenDetailCompletionTokens": "{count} tokens",
   "tokenDetailSpeed": "{value} tok/s",
   "tokenDetailDuration": "{value}s",
-  "tokenDetailTotalTokens": "{count} tokens"
+  "tokenDetailTotalTokens": "{count} tokens",
+  "settingsPageSupabaseSync": "Supabase 同步",
+  "settingsPageSupabaseSyncSubtitle": "导入的对话自动同步到 Supabase 云",
+  "supabaseSyncSuccess": "对话已同步到云端",
+  "supabaseSyncFailed": "云端同步失败：{error}",
+  "@supabaseSyncFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "threadBackupTitle": "对话备份",
+  "threadBackupImport": "导入",
+  "threadBackupExportAll": "导出全部",
+  "threadBackupDeleteAll": "删除全部",
+  "threadBackupCancel": "取消",
+  "threadBackupConfirm": "确认",
+  "threadBackupDismiss": "忽略",
+  "threadBackupImportFromFile": "从文件导入",
+  "threadBackupImportFromFileSubtitle": "选择 JSON 导出文件",
+  "threadBackupPasteJson": "粘贴 JSON",
+  "threadBackupPasteJsonSubtitle": "直接粘贴导出的 JSON",
+  "threadBackupChooseSource": "选择来源...",
+  "threadBackupChooseSourceSubtitle": "手动选择来源平台",
+  "threadBackupSummary": "来自 {sources} 个来源的 {count} 个对话",
+  "@threadBackupSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "sources": {
+        "type": "int"
+      }
+    }
+  },
+  "threadBackupNoThreads": "暂无备份的对话",
+  "threadBackupNoThreadsHint": "点 + 从 ChatGPT、Gemini 等导入",
+  "threadBackupConfirmImport": "{count} 个新对话准备导入",
+  "@threadBackupConfirmImport": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "threadBackupDuplicatesSkipped": " （{count} 个重复已跳过）",
+  "@threadBackupDuplicatesSkipped": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "threadBackupImportSuccess": "成功导入 {count} 个对话",
+  "@threadBackupImportSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "threadBackupImportFailed": "导入失败：{error}",
+  "@threadBackupImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "threadBackupExportSuccess": "已导出 {count} 个对话到文件",
+  "@threadBackupExportSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "threadBackupExportFailed": "导出失败：{error}",
+  "@threadBackupExportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "threadBackupDeleteConfirmTitle": "删除对话",
+  "threadBackupDeleteConfirmContent": "从备份中移除这个对话？不会影响原始聊天应用。",
+  "threadBackupDeleteAllConfirmTitle": "删除全部对话",
+  "threadBackupDeleteAllConfirmContent": "移除所有备份的对话？此操作不可撤销。",
+  "threadBackupDelete": "删除",
+  "threadBackupDeleteAll": "删除全部",
+  "threadBackupSelectSourceTitle": "选择来源平台",
+  "threadBackupPasteJsonTitle": "粘贴导出 JSON",
+  "threadBackupPasteJsonHint": "在此粘贴导出 JSON...",
+  "threadBackupMessagesCount": "{count} 条消息",
+  "@threadBackupMessagesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "threadBackupSourceChatGPT": "ChatGPT",
+  "threadBackupSourceGemini": "Gemini",
+  "threadBackupSourcePerplexity": "Perplexity",
+  "threadBackupSourceClaude": "Claude",
+  "threadBackupSourceKelivo": "Kelivo",
+  "threadBackupSourceOther": "其他",
+  "threadBackupDetailSource": "来源：{source}",
+  "@threadBackupDetailSource": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "threadBackupDetailMessages": "消息数：{count}",
+  "@threadBackupDetailMessages": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "threadBackupDetailCreated": "创建时间：{date}",
+  "@threadBackupDetailCreated": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "threadBackupDetailUpdated": "更新时间：{date}",
+  "@threadBackupDetailUpdated": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "threadBackupDetailRecentMessages": "最近消息：",
+  "threadBackupDetailMoreMessages": "... 还有 {count} 条消息",
+  "@threadBackupDetailMoreMessages": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "threadBackupDetailClose": "关闭"
 }
