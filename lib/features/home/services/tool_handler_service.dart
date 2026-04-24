@@ -6,31 +6,21 @@ import '../../../core/providers/assistant_provider.dart';
 import '../../../core/providers/mcp_provider.dart';
 import '../../../core/providers/memory_provider.dart';
 import '../../../core/providers/settings_provider.dart';
+import '../../../core/services/chat/chat_service.dart';
+import '../../../core/services/chat/chat_orchestrator_service.dart';
 import '../../../core/services/mcp/mcp_tool_service.dart';
 import '../../../core/services/search/search_tool_service.dart';
 import 'tool_approval_service.dart';
 
-/// 工具调用处理服务
-///
-/// 处理各类工具调用：
-/// - MCP 工具
-/// - Memory 工具 (create/edit/delete)
-/// - Search 工具
 class ToolHandlerService {
-  ToolHandlerService({required this.contextProvider});
+  ToolHandlerService({
+    required this.contextProvider,
+    required this.chatOrchestratorService,
+  });
 
-  /// Build context (used for accessing providers)
   final BuildContext contextProvider;
+  final ChatOrchestratorService chatOrchestratorService;
 
-  // ============================================================================
-  // Tool Schema Sanitization
-  // ============================================================================
-
-  /// Sanitize/translate JSON Schema to each provider's accepted subset.
-  ///
-  /// Different providers (Google, OpenAI, Claude) have different requirements
-  /// for tool parameter schemas. This method normalizes schemas to work across
-  /// all providers.
   static Map<String, dynamic> sanitizeToolParametersForProvider(
     Map<String, dynamic> schema,
     ProviderKind kind,
@@ -47,10 +37,8 @@ class ToolHandlerService {
     if (node is! Map) return node;
 
     final m = Map<String, dynamic>.from(node);
-    // Remove $schema as it's not needed for tool definitions
     m.remove(r'$schema');
 
-    // Convert 'const' to 'enum' for compatibility
     if (m.containsKey('const')) {
       final v = m['const'];
       if (v is String || v is num || v is bool) {
@@ -59,7 +47,6 @@ class ToolHandlerService {
       m.remove('const');
     }
 
-    // Flatten anyOf/oneOf/allOf to first variant for simplicity
     for (final key in [
       'anyOf',
       'oneOf',
@@ -82,16 +69,13 @@ class ToolHandlerService {
       }
     }
 
-    // Normalize type array to single type
     final t = m['type'];
     if (t is List && t.isNotEmpty) m['type'] = t.first.toString();
 
-    // Normalize items array to single item
     final items = m['items'];
     if (items is List && items.isNotEmpty) m['items'] = items.first;
     if (m['items'] is Map) m['items'] = _sanitizeNode(m['items'], kind);
 
-    // Recursively sanitize properties
     if (m['properties'] is Map) {
       final props = Map<String, dynamic>.from(m['properties']);
       final norm = <String, dynamic>{};
@@ -101,7 +85,6 @@ class ToolHandlerService {
       m['properties'] = norm;
     }
 
-    // Keep only allowed keys based on provider
     Set<String> allowed;
     switch (kind) {
       case ProviderKind.google:
@@ -134,16 +117,6 @@ class ToolHandlerService {
     return jsonDecode(jsonEncode(input)) as Map<String, dynamic>;
   }
 
-  // ============================================================================
-  // Tool Definitions Builder
-  // ============================================================================
-
-  /// Build tool definitions for API call.
-  ///
-  /// Returns a list of tool definitions including:
-  /// - Search tool (if enabled and model supports tools)
-  /// - Memory tools (if assistant has memory enabled)
-  /// - MCP tools (from selected servers for the assistant)
   List<Map<String, dynamic>> buildToolDefinitions(
     SettingsProvider settings,
     Assistant? assistant,
@@ -155,17 +128,14 @@ class ToolHandlerService {
     final List<Map<String, dynamic>> toolDefs = <Map<String, dynamic>>[];
     final supportsTools = isToolModel(providerKey, modelId);
 
-    // Search tool (skip when Gemini built-in search is active)
     if (settings.searchEnabled && !hasBuiltInSearch && supportsTools) {
       toolDefs.add(SearchToolService.getToolDefinition());
     }
 
-    // Memory tools
     if (assistant?.enableMemory == true && supportsTools) {
       toolDefs.addAll(_buildMemoryToolDefinitions());
     }
 
-    // MCP tools
     final mcpTools = _buildMcpToolDefinitions(
       settings: settings,
       assistant: assistant,
@@ -174,10 +144,14 @@ class ToolHandlerService {
     );
     toolDefs.addAll(mcpTools);
 
+    // Orchestration: spawn_subtask tool
+    if (supportsTools && settings.orchestrationEnabled) {
+      toolDefs.addAll(_buildOrchestrationToolDefinitions());
+    }
+
     return toolDefs;
   }
 
-  /// Build memory tool definitions (create/edit/delete).
   List<Map<String, dynamic>> _buildMemoryToolDefinitions() {
     return [
       {
@@ -238,7 +212,40 @@ class ToolHandlerService {
     ];
   }
 
-  /// Build MCP tool definitions from connected servers.
+  List<Map<String, dynamic>> _buildOrchestrationToolDefinitions() {
+    return [
+      {
+        'type': 'function',
+        'function': {
+          'name': 'spawn_subtask',
+          'description':
+              'Spawn a new child conversation with a specific task instruction. '
+              'The spawned conversation will process independently and report back '
+              'its results. Use this to delegate work that can be done in parallel '
+              'or independently. The sub-task runs immediately and the result is '
+              'posted back into this conversation.',
+          'parameters': {
+            'type': 'object',
+            'properties': {
+              'task_instruction': {
+                'type': 'string',
+                'description':
+                    'Detailed instructions for what the sub-task should accomplish. '
+                    'Be specific about the expected output format.',
+              },
+              'title': {
+                'type': 'string',
+                'description':
+                    'Optional title for the sub-conversation (defaults to a truncated version of the instruction).',
+              },
+            },
+            'required': ['task_instruction'],
+          },
+        },
+      },
+    ];
+  }
+
   List<Map<String, dynamic>> _buildMcpToolDefinitions({
     required SettingsProvider settings,
     required Assistant? assistant,
@@ -295,17 +302,6 @@ class ToolHandlerService {
     }).toList();
   }
 
-  // ============================================================================
-  // Tool Call Handler
-  // ============================================================================
-
-  /// Build tool call handler function.
-  ///
-  /// Returns a function that handles tool calls by name and arguments.
-  /// Supports:
-  /// - Search tool calls
-  /// - Memory tool calls (create/edit/delete)
-  /// - MCP tool calls
   Future<String> Function(String, Map<String, dynamic>)? buildToolCallHandler(
     SettingsProvider settings,
     Assistant? assistant, {
@@ -313,8 +309,6 @@ class ToolHandlerService {
   }) {
     final mcp = contextProvider.read<McpProvider>();
     final toolSvc = contextProvider.read<McpToolService>();
-    // Capture AssistantProvider reference before async gap to avoid
-    // use_build_context_synchronously warning
     final assistantProvider = contextProvider.read<AssistantProvider>();
 
     return (name, args) async {
@@ -331,10 +325,15 @@ class ToolHandlerService {
           return memoryResult;
         }
 
+        // Orchestration: spawn_subtask
+        if (name == 'spawn_subtask' && settings.orchestrationEnabled) {
+          return await _handleSpawnSubtask(args, assistant, settings);
+        }
+
         // Approval gate for MCP tools
         if (approvalService != null && mcp.toolNeedsApproval(name)) {
-          // Generate a unique id for this tool call approval request
-          final toolCallId = '${name}_${DateTime.now().microsecondsSinceEpoch}';
+          final toolCallId =
+              '${name}_${DateTime.now().microsecondsSinceEpoch}';
           final result = await approvalService.requestApproval(
             toolCallId: toolCallId,
             toolName: name,
@@ -344,7 +343,8 @@ class ToolHandlerService {
             return jsonEncode({
               'type': 'tool_error',
               'error': 'approval_denied',
-              'message': result.denyReason ?? 'User denied the tool call',
+              'message':
+                  result.denyReason ?? 'User denied the tool call',
               'tool': name,
             });
           }
@@ -360,8 +360,6 @@ class ToolHandlerService {
         );
         return text;
       } catch (e) {
-        // Catch unexpected exceptions and return error JSON to LLM
-        // This prevents tool failures from terminating the chat flow
         return jsonEncode({
           'type': 'tool_error',
           'error': 'execution_error',
@@ -374,9 +372,6 @@ class ToolHandlerService {
     };
   }
 
-  /// Handle memory tool calls (create/edit/delete).
-  ///
-  /// Returns null if the tool is not a memory tool or memory is not enabled.
   Future<String?> _handleMemoryToolCall(
     String name,
     Map<String, dynamic> args,
@@ -404,10 +399,59 @@ class ToolHandlerService {
         final ok = await mp.delete(id: id);
         return ok ? 'deleted' : '';
       }
-    } catch (_) {
-      // Ignore memory operation errors
-    }
+    } catch (_) {}
 
     return null;
+  }
+
+  Future<String> _handleSpawnSubtask(
+    Map<String, dynamic> args,
+    Assistant? assistant,
+    SettingsProvider settings,
+  ) async {
+    final taskInstruction = (args['task_instruction'] ?? '').toString();
+    final title = (args['title'] ?? '').toString();
+
+    if (taskInstruction.isEmpty) {
+      return jsonEncode({
+        'type': 'tool_error',
+        'error': 'Missing required parameter: task_instruction',
+      });
+    }
+
+    final currentConvoId =
+        contextProvider.read<ChatService>().currentConversationId;
+
+    if (currentConvoId == null) {
+      return jsonEncode({
+        'type': 'tool_error',
+        'error': 'No active conversation to spawn from',
+      });
+    }
+
+    final result = await chatOrchestratorService.spawnSubtask(
+      parentConversationId: currentConvoId,
+      taskInstruction: taskInstruction,
+      title: title.isNotEmpty ? title : null,
+      assistantId: assistant?.id,
+      assistant: assistant,
+      settings: settings,
+    );
+
+    if (!result.success || result.conversation == null) {
+      return jsonEncode({
+        'type': 'tool_error',
+        'error': result.errorMessage ?? 'Failed to spawn subtask',
+      });
+    }
+
+    return jsonEncode({
+      'type': 'subtask_created',
+      'subtask_id': result.conversation!.id,
+      'subtask_title': result.conversation!.title,
+      'status': 'completed',
+      'message':
+          'Sub-task executed successfully. The result has been reported back to this conversation.',
+    });
   }
 }

@@ -16,7 +16,6 @@ import '../controllers/generation_controller.dart';
 import 'message_builder_service.dart';
 import 'tool_approval_service.dart';
 
-/// Callback types for UI updates from MessageGenerationService
 typedef OnMessagesChanged = void Function();
 typedef OnConversationLoadingChanged =
     void Function(String conversationId, bool loading);
@@ -45,7 +44,6 @@ Map<String, String>? buildConversationRequestHeaders({
   return headers.isEmpty ? null : headers;
 }
 
-/// Result of preparing a message generation
 class PreparedGeneration {
   final List<Map<String, dynamic>> apiMessages;
   final List<Map<String, dynamic>> toolDefs;
@@ -62,15 +60,6 @@ class PreparedGeneration {
   });
 }
 
-/// Service for handling message generation orchestration.
-///
-/// This service coordinates:
-/// - Message creation (user + assistant placeholder)
-/// - API message preparation with all injections
-/// - Stream execution and management
-/// - Reasoning state initialization
-///
-/// UI updates are communicated through callbacks to maintain separation.
 class MessageGenerationService {
   MessageGenerationService({
     required this.chatService,
@@ -86,28 +75,21 @@ class MessageGenerationService {
   final stream_ctrl.StreamController streamController;
   final BuildContext contextProvider;
 
-  // Callbacks for UI updates (set by home_page)
   OnMessagesChanged? onMessagesChanged;
   OnConversationLoadingChanged? onConversationLoadingChanged;
   OnScrollToBottom? onScrollToBottom;
   OnShowError? onShowError;
   OnShowWarning? onShowWarning;
   OnHapticFeedback? onHapticFeedback;
-
-  /// Called when file processing starts.
   VoidCallback? onFileProcessingStarted;
-
-  /// Called when file processing finishes.
   VoidCallback? onFileProcessingFinished;
 
-  /// Check if reasoning is enabled for given budget
   bool isReasoningEnabled(int? budget) {
     if (budget == null) return true;
     if (budget == -1) return true;
     return budget >= 1024;
   }
 
-  /// Prepare API messages with all injections applied.
   Future<PreparedGeneration> prepareApiMessagesWithInjections({
     required List<ChatMessage> messages,
     required Map<String, int> versionSelections,
@@ -128,7 +110,6 @@ class MessageGenerationService {
 
     onFileProcessingStarted?.call();
 
-    // Build API messages
     final apiMessages = messageBuilderService.buildApiMessages(
       messages: messages,
       versionSelections: versionSelections,
@@ -136,7 +117,6 @@ class MessageGenerationService {
       includeOpenAIToolMessages: includeOpenAIToolMessages,
     );
 
-    // Apply assistant replace-only regexes at send-time (visual stays unchanged).
     if (assistant != null && assistant.regexRules.isNotEmpty) {
       for (int i = 0; i < apiMessages.length; i++) {
         final role = (apiMessages[i]['role'] ?? '').toString();
@@ -152,14 +132,11 @@ class MessageGenerationService {
       }
     }
 
-    // Process user messages (documents, OCR, templates)
     final lastUserImagePaths = await messageBuilderService
         .processUserMessagesForApi(apiMessages, settings, assistant);
 
-    // Signal processing finished
     onFileProcessingFinished?.call();
 
-    // Inject prompts
     messageBuilderService.injectSystemPrompt(apiMessages, assistant, modelId);
     await messageBuilderService.injectMemoryAndRecentChats(
       apiMessages,
@@ -186,11 +163,15 @@ class MessageGenerationService {
       assistantId,
     );
 
-    // Apply context limit and inline images
+    // Inject orchestration context for spawned conversations
+    await messageBuilderService.injectOrchestrationContext(
+      apiMessages,
+      currentConversation?.id,
+    );
+
     messageBuilderService.applyContextLimit(apiMessages, assistant);
     await messageBuilderService.inlineLocalImages(apiMessages);
 
-    // Prepare tools
     final toolDefs = generationController.buildToolDefinitions(
       settings,
       assistant,
@@ -215,7 +196,6 @@ class MessageGenerationService {
     );
   }
 
-  /// Create user message from input data.
   Future<ChatMessage> createUserMessage({
     required String conversationId,
     required ChatInputData input,
@@ -241,7 +221,6 @@ class MessageGenerationService {
     );
   }
 
-  /// Create assistant message placeholder.
   Future<ChatMessage> createAssistantPlaceholder({
     required String conversationId,
     required String modelId,
@@ -261,7 +240,6 @@ class MessageGenerationService {
     );
   }
 
-  /// Initialize reasoning state for a message if reasoning is enabled.
   Future<void> initializeReasoningState({
     required String messageId,
     required bool enableReasoning,
@@ -276,7 +254,6 @@ class MessageGenerationService {
     }
   }
 
-  /// Build GenerationContext for streaming.
   stream_ctrl.GenerationContext buildGenerationContext({
     required ChatMessage assistantMessage,
     required PreparedGeneration prepared,
@@ -312,7 +289,6 @@ class MessageGenerationService {
     );
   }
 
-  /// Get current model and provider from assistant or global settings.
   ({String? providerKey, String? modelId}) getModelConfig(
     SettingsProvider settings,
     Assistant? assistant,
@@ -324,7 +300,6 @@ class MessageGenerationService {
     );
   }
 
-  /// Calculate version info for regeneration.
   ({String? targetGroupId, int nextVersion, int lastKeep})
   calculateRegenerationVersioning({
     required ChatMessage message,
@@ -357,7 +332,6 @@ class MessageGenerationService {
         nextVersion = maxVer + 1;
       }
     } else {
-      // User message
       final userGroupId = message.groupId ?? message.id;
       int userFirst = -1;
       for (int i = 0; i < messages.length; i++) {
@@ -402,7 +376,6 @@ class MessageGenerationService {
     );
   }
 
-  /// Remove trailing messages after regeneration cut point.
   Future<List<String>> removeTrailingMessages({
     required List<ChatMessage> messages,
     required int lastKeep,
@@ -412,7 +385,6 @@ class MessageGenerationService {
       return const [];
     }
 
-    // Collect groups that appear at or before lastKeep
     final keepGroups = <String>{};
     for (int i = 0; i <= lastKeep && i < messages.length; i++) {
       final g = (messages[i].groupId ?? messages[i].id);
@@ -514,7 +486,6 @@ class MessageGenerationService {
         .toList(growable: false);
   }
 
-  /// Build user image paths considering OCR mode.
   List<String> buildUserImagePaths({
     required ChatInputData? input,
     required List<String> lastUserImagePaths,
