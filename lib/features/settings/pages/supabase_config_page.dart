@@ -229,7 +229,7 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Lucide.Info, size: 16, color: cs.onSurface.withValues(alpha: 0.5)),
+                Icon(Lucide.info, size: 16, color: cs.onSurface.withValues(alpha: 0.5)),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
