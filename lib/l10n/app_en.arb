@@ -554,7 +554,7 @@
   "backupPageRestoreTooltip": "Restore",
   "backupPageDeleteTooltip": "Delete",
   "backupPageDeleteConfirmTitle": "Confirm Deletion",
-  "backupPageDeleteConfirmContent": "Are you sure you want to delete remote backup "{name}"? This action cannot be undone.",
+  "backupPageDeleteConfirmContent": "Are you sure you want to delete remote backup {name}? This action cannot be undone.",
   "backupPageBackupManagement": "Backup Management",
   "backupPageWebDavBackup": "WebDAV Backup",
   "backupPageWebDavServerSettings": "WebDAV Server Settings",
@@ -816,7 +816,7 @@
   "sideDrawerMenuRegenerateTitle": "Regenerate Title",
   "sideDrawerMenuMoveTo": "Move to",
   "sideDrawerMenuDelete": "Delete",
-  "sideDrawerDeleteSnackbar": "Deleted "{title}"",
+  "sideDrawerDeleteSnackbar": "Deleted {title}",
   "@sideDrawerDeleteSnackbar": {
     "placeholders": {
       "title": {
@@ -1201,7 +1201,7 @@
   "providerGroupsCreateDialogOk": "Create",
   "providerGroupsCreateFailedToast": "Failed to create group",
   "providerGroupsDeleteConfirmTitle": "Delete group?",
-  "providerGroupsDeleteConfirmContent": "Providers in this group will be moved to "Other".",
+  "providerGroupsDeleteConfirmContent": "Providers in this group will be moved to Other.",
   "providerGroupsDeleteConfirmCancel": "Cancel",
   "providerGroupsDeleteConfirmOk": "Delete",
   "providerGroupsDeletedToast": "Group deleted",
@@ -1787,7 +1787,7 @@
   "worldBookExport": "Share / Export",
   "worldBookConfig": "Configure",
   "worldBookDeleteTitle": "Delete World Book",
-  "worldBookDeleteMessage": "Delete "{name}"? This cannot be undone.",
+  "worldBookDeleteMessage": "Delete {name}? This cannot be undone.",
   "@worldBookDeleteMessage": {
     "placeholders": {
       "name": {
@@ -1870,7 +1870,7 @@
       "count": {"type": "int"}
     }
   },
-  "tokenDetailSpeed": "{value} tok/s",
+  "tokenDetailSpeed": "{value} tokens",
   "@tokenDetailSpeed": {
     "placeholders": {
       "value": {"type": "String"}
