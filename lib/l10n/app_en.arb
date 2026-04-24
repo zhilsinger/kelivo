@@ -1850,7 +1850,7 @@
   "toolApprovalDeny": "Deny",
   "toolApprovalDenyTitle": "Deny tool call",
   "toolApprovalDenyHint": "Reason (optional)",
-  "toolApprovalDeniedMessage": "Tool call "{toolName}" was denied by user. Reason: {reason}",
+  "toolApprovalDeniedMessage": "Tool call {toolName} was denied by user. Reason: {reason}",
   "tokenDetailPromptTokens": "{count} tokens",
   "@tokenDetailPromptTokens": {
     "placeholders": {
