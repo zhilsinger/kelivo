@@ -70,6 +70,11 @@ class ChatMessage extends HiveObject {
   @HiveField(19)
   final int? durationMs;
 
+  // Message type for differentiating orchestration messages
+  // 'normal', 'task_report', 'task_question', 'task_completion', 'task_error'
+  @HiveField(20)
+  final String messageType;
+
   ChatMessage({
     String? id,
     required this.role,
@@ -91,6 +96,7 @@ class ChatMessage extends HiveObject {
     this.completionTokens,
     this.cachedTokens,
     this.durationMs,
+    this.messageType = 'normal',
   }) : id = id ?? const Uuid().v4(),
        timestamp = timestamp ?? DateTime.now(),
        groupId = groupId ?? id,
@@ -117,6 +123,7 @@ class ChatMessage extends HiveObject {
     int? completionTokens,
     int? cachedTokens,
     int? durationMs,
+    String? messageType,
   }) {
     return ChatMessage(
       id: id ?? this.id,
@@ -140,6 +147,7 @@ class ChatMessage extends HiveObject {
       completionTokens: completionTokens ?? this.completionTokens,
       cachedTokens: cachedTokens ?? this.cachedTokens,
       durationMs: durationMs ?? this.durationMs,
+      messageType: messageType ?? this.messageType,
     );
   }
 
@@ -165,6 +173,7 @@ class ChatMessage extends HiveObject {
       'completionTokens': completionTokens,
       'cachedTokens': cachedTokens,
       'durationMs': durationMs,
+      'messageType': messageType,
     };
   }
 
@@ -194,6 +203,7 @@ class ChatMessage extends HiveObject {
       completionTokens: json['completionTokens'] as int?,
       cachedTokens: json['cachedTokens'] as int?,
       durationMs: json['durationMs'] as int?,
+      messageType: json['messageType'] as String? ?? 'normal',
     );
   }
 }

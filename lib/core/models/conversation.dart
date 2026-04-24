@@ -47,6 +47,18 @@ class Conversation extends HiveObject {
   @HiveField(11)
   int lastSummarizedMessageCount;
 
+  // Agentic orchestration: ID of the conversation that spawned this one
+  @HiveField(12)
+  String? parentConversationId;
+
+  // Agentic orchestration: task instruction given when this sub-task was created
+  @HiveField(13)
+  String? taskInstruction;
+
+  // Agentic orchestration: current task status (0=pending, 1=in_progress, 2=completed, 3=needs_clarification, 4=error)
+  @HiveField(14)
+  int taskStatus;
+
   Conversation({
     String? id,
     required this.title,
@@ -60,6 +72,9 @@ class Conversation extends HiveObject {
     Map<String, int>? versionSelections,
     this.summary,
     int? lastSummarizedMessageCount,
+    this.parentConversationId,
+    this.taskInstruction,
+    this.taskStatus = 0,
   }) : id = id ?? const Uuid().v4(),
        createdAt = createdAt ?? DateTime.now(),
        updatedAt = updatedAt ?? DateTime.now(),
@@ -82,7 +97,12 @@ class Conversation extends HiveObject {
     Map<String, int>? versionSelections,
     String? summary,
     int? lastSummarizedMessageCount,
+    String? parentConversationId,
+    String? taskInstruction,
+    int? taskStatus,
     bool clearSummary = false,
+    bool clearParentConversation = false,
+    bool clearTaskInstruction = false,
   }) {
     return Conversation(
       id: id ?? this.id,
@@ -98,6 +118,13 @@ class Conversation extends HiveObject {
       summary: clearSummary ? null : (summary ?? this.summary),
       lastSummarizedMessageCount:
           lastSummarizedMessageCount ?? this.lastSummarizedMessageCount,
+      parentConversationId: clearParentConversation
+          ? null
+          : (parentConversationId ?? this.parentConversationId),
+      taskInstruction: clearTaskInstruction
+          ? null
+          : (taskInstruction ?? this.taskInstruction),
+      taskStatus: taskStatus ?? this.taskStatus,
     );
   }
 
@@ -115,6 +142,9 @@ class Conversation extends HiveObject {
       'versionSelections': versionSelections,
       'summary': summary,
       'lastSummarizedMessageCount': lastSummarizedMessageCount,
+      'parentConversationId': parentConversationId,
+      'taskInstruction': taskInstruction,
+      'taskStatus': taskStatus,
     };
   }
 
@@ -138,6 +168,9 @@ class Conversation extends HiveObject {
       summary: json['summary'] as String?,
       lastSummarizedMessageCount:
           json['lastSummarizedMessageCount'] as int? ?? 0,
+      parentConversationId: json['parentConversationId'] as String?,
+      taskInstruction: json['taskInstruction'] as String?,
+      taskStatus: (json['taskStatus'] as int?) ?? 0,
     );
   }
 }
