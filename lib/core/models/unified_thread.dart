@@ -1,9 +1,5 @@
-import 'package:hive/hive.dart' show HiveObject;
-
-/// WARNING: This class previously used @HiveType annotations but the generated
-/// adapter was never created. To avoid build_runner dependency, it is now a
-/// plain Dart class. It extends HiveObject for structural compatibility but
-/// does NOT use @HiveType (no adapter needed until persisted via Hive box).
+/// Plain Dart model for imported threads from other chat apps.
+/// No Hive annotations (no build_runner needed). Persist via JSON serialization.
 class UnifiedThread {
   final String id;
   String title;
