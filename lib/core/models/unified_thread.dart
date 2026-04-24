@@ -1,7 +1,6 @@
-import 'package:hive/hive.dart';
-
-@HiveType(typeId: 20)
-class UnifiedThread extends HiveObject {
+/// Plain Dart model for imported threads from other chat apps.
+/// No Hive annotations (no build_runner needed). Persist via JSON serialization.
+class UnifiedThread {
   final String id;
   String title;
   final String source;
