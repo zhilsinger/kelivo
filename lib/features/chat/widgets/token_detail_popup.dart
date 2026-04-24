@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import '../../../icons/lucide_adapter.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../core/models/model_pricing.dart';
 
-/// A bubble card showing detailed token usage info.
+/// A bubble card showing detailed token usage and cost info.
 ///
-/// Shows up to 4 rows (hidden when data is null/0):
+/// Shows up to 5 rows (hidden when data is null/0):
 /// - ArrowUp: prompt tokens (with cached count if > 0)
 /// - ArrowDown: completion tokens
 /// - Zap: tok/s (completionTokens / durationSeconds)
 /// - Timer: duration in seconds
+/// - DollarSign: total cost in USD
 class TokenDetailPopup extends StatelessWidget {
   const TokenDetailPopup({
     super.key,
@@ -16,12 +18,14 @@ class TokenDetailPopup extends StatelessWidget {
     this.completionTokens,
     this.cachedTokens,
     this.durationMs,
+    this.costUsd,
   });
 
   final int? promptTokens;
   final int? completionTokens;
   final int? cachedTokens;
   final int? durationMs;
+  final double? costUsd;
 
   @override
   Widget build(BuildContext context) {
@@ -70,6 +74,16 @@ class TokenDetailPopup extends StatelessWidget {
       rows.add(_buildRow(
         icon: Lucide.clock,
         text: l10n.tokenDetailDuration(durationSec),
+        cs: cs,
+      ));
+    }
+
+    // Cost row
+    if (costUsd != null && costUsd! > 0) {
+      final costStr = CostCalculator.formatCost(costUsd!);
+      rows.add(_buildRow(
+        icon: Lucide.DollarSign,
+        text: '${l10n.tokenDetailCostLabel} $costStr',
         cs: cs,
       ));
     }
@@ -137,4 +151,3 @@ class TokenDetailPopup extends StatelessWidget {
     );
   }
 }
-
