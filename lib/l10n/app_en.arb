@@ -554,7 +554,7 @@
   "backupPageRestoreTooltip": "Restore",
   "backupPageDeleteTooltip": "Delete",
   "backupPageDeleteConfirmTitle": "Confirm Deletion",
-  "backupPageDeleteConfirmContent": "Are you sure you want to delete remote backup "{name}"? This action cannot be undone.",
+  "backupPageDeleteConfirmContent": "Are you sure you want to delete remote backup {name}? This action cannot be undone.",
   "backupPageBackupManagement": "Backup Management",
   "backupPageWebDavBackup": "WebDAV Backup",
   "backupPageWebDavServerSettings": "WebDAV Server Settings",
