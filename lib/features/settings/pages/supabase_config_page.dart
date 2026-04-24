@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../icons/lucide_adapter.dart';
 import '../../../core/providers/settings_provider.dart';
+import '../../../core/services/supabase/supabase_client_service.dart';
 
 class SupabaseConfigPage extends StatefulWidget {
   const SupabaseConfigPage({super.key});
@@ -44,32 +45,25 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
       _testResult = null;
     });
 
-    try {
-      final dio = Dio(BaseOptions(
-        baseUrl: '${url.endsWith('/') ? url.substring(0, url.length - 1) : url}/rest/v1',
-        headers: {
-          'apikey': key,
-          'Authorization': 'Bearer $key',
-          'Content-Type': 'application/json',
-        },
-      ));
-      await dio.get('/threads', queryParameters: {'select': 'id', 'limit': 1});
-      setState(() => _testResult = true);
-    } catch (e) {
-      debugPrint('[SupabaseConfig] Test failed: $e');
-      setState(() => _testResult = false);
-    } finally {
-      setState(() => _testing = false);
-    }
+    final client = SupabaseClientService.instance;
+    client.configure(url, key);
+    final ok = await client.testConnection();
+    setState(() {
+      _testResult = ok;
+      _testing = false;
+    });
   }
 
   Future<void> _save() async {
     final url = _urlController.text.trim();
     final key = _keyController.text.trim();
     await context.read<SettingsProvider>().setSupabaseConfig(url, key);
+    if (url.isNotEmpty && key.isNotEmpty) {
+      SupabaseClientService.instance.configure(url, key);
+    }
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Saved'), duration: const Duration(seconds: 2)),
+        SnackBar(content: const Text('Saved'), duration: const Duration(seconds: 2)),
       );
       Navigator.of(context).maybePop();
     }
@@ -77,37 +71,37 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
 
   Future<void> _clear() async {
     await context.read<SettingsProvider>().clearSupabaseConfig();
+    SupabaseClientService.instance.clear();
     if (mounted) {
       _urlController.clear();
       _keyController.clear();
       setState(() => _testResult = null);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Cleared'), duration: const Duration(seconds: 2)),
+        SnackBar(content: const Text('Cleared'), duration: const Duration(seconds: 2)),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final settings = context.watch<SettingsProvider>();
 
     return Scaffold(
       appBar: AppBar(
         leading: Tooltip(
-          message: l10n.settingsPageBackButton,
+          message: AppLocalizations.of(context)!.settingsPageBackButton,
           child: IconButton(
             icon: const Icon(Lucide.ArrowLeft),
             onPressed: () => Navigator.of(context).maybePop(),
           ),
         ),
-        title: Text('Supabase Configuration'),
+        title: const Text('Supabase Sync'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Status
+          // Status banner
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -143,8 +137,8 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
           const SizedBox(height: 16),
 
           // URL field
-          Text('Server URL',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface.withValues(alpha: 0.8)),
+          const Text('Server URL',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 6),
           TextField(
@@ -160,8 +154,8 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
           const SizedBox(height: 16),
 
           // Anon Key field
-          Text('Anon Key',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface.withValues(alpha: 0.8)),
+          const Text('Anon Key',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 6),
           TextField(
@@ -180,7 +174,7 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
           ),
           const SizedBox(height: 24),
 
-          // Test connection
+          // Test connection button
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -194,7 +188,8 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
               label: Text(_testing ? 'Testing...' : 'Test Connection'),
             ),
           ),
-          if (_testResult != null) ...[n            const SizedBox(height: 8),
+          if (_testResult != null) ...[
+            const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -223,7 +218,7 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
                 child: FilledButton.icon(
                   onPressed: _save,
                   icon: const Icon(Lucide.Save, size: 18),
-                  label: Text('Save'),
+                  label: const Text('Save'),
                 ),
               ),
               const SizedBox(width: 12),
@@ -231,7 +226,7 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
                 child: OutlinedButton.icon(
                   onPressed: _clear,
                   icon: const Icon(Lucide.Trash2, size: 18),
-                  label: Text('Clear'),
+                  label: const Text('Clear'),
                 ),
               ),
             ],
