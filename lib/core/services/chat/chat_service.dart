@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../models/chat_message.dart';
 import '../../models/conversation.dart';
+import '../../models/spawned_task.dart';
 import '../../../utils/sandbox_path_resolver.dart';
 import '../../../utils/app_directories.dart';
 
@@ -106,6 +107,13 @@ class ChatService extends ChangeNotifier {
     return messages;
   }
 
+  /// Rebuild the message cache for a conversation. Used when messages
+  /// are added externally (e.g., by ChatOrchestratorService).
+  void rebuildMessageCache(String conversationId) {
+    _messagesCache.remove(conversationId);
+    notifyListeners();
+  }
+
   Future<Conversation> createConversation({
     String? title,
     String? assistantId,
@@ -137,6 +145,53 @@ class ChatService extends ChangeNotifier {
     _currentConversationId = conversation.id;
     notifyListeners();
     return conversation;
+  }
+
+  /// Create a conversation linked to a parent (for sub-tasks).
+  /// Persisted immediately with parentConversationId and taskInstruction.
+  Future<Conversation> createSpawnedConversation({
+    required String parentConversationId,
+    required String taskInstruction,
+    String? title,
+    String? assistantId,
+  }) async {
+    if (!_initialized) await init();
+    final conversation = Conversation(
+      title: title ??
+          'Sub-task: ${taskInstruction.length > 60 ? '${taskInstruction.substring(0, 57)}...' : taskInstruction}',
+      assistantId: assistantId,
+      parentConversationId: parentConversationId,
+      taskInstruction: taskInstruction,
+      taskStatus: TaskStatus.inProgress,
+    );
+    await _conversationsBox.put(conversation.id, conversation);
+    _currentConversationId = conversation.id;
+    notifyListeners();
+    return conversation;
+  }
+
+  /// Get all child conversations of a parent.
+  List<Conversation> getChildConversations(String parentConversationId) {
+    if (!_initialized) return [];
+    return getAllConversations()
+        .where((c) => c.parentConversationId == parentConversationId)
+        .toList();
+  }
+
+  /// Update the task status of a conversation.
+  Future<void> updateTaskStatus(String conversationId, int status) async {
+    if (!_initialized) return;
+    if (_draftConversations.containsKey(conversationId)) {
+      final draft = _draftConversations[conversationId]!;
+      draft.taskStatus = status;
+      notifyListeners();
+      return;
+    }
+    final c = _conversationsBox.get(conversationId);
+    if (c == null) return;
+    c.taskStatus = status;
+    await c.save();
+    notifyListeners();
   }
 
   Future<void> deleteConversation(String id) async {
@@ -396,6 +451,9 @@ class ChatService extends ChangeNotifier {
       truncateIndex: conversation.truncateIndex,
       assistantId: conversation.assistantId,
       versionSelections: Map<String, int>.from(conversation.versionSelections),
+      parentConversationId: conversation.parentConversationId,
+      taskInstruction: conversation.taskInstruction,
+      taskStatus: conversation.taskStatus,
     );
     await _conversationsBox.put(restored.id, restored);
 
@@ -589,6 +647,7 @@ class ChatService extends ChangeNotifier {
     DateTime? reasoningFinishedAt,
     String? groupId,
     int? version,
+    String messageType = 'normal',
   }) async {
     if (!_initialized) await init();
 
@@ -622,6 +681,7 @@ class ChatService extends ChangeNotifier {
       reasoningFinishedAt: reasoningFinishedAt,
       groupId: groupId,
       version: version,
+      messageType: messageType,
     );
 
     await _messagesBox.put(message.id, message);
@@ -852,6 +912,9 @@ class ChatService extends ChangeNotifier {
     required String? assistantId,
     required List<ChatMessage> sourceMessages,
     Map<String, int>? versionSelections,
+    String? parentConversationId,
+    String? taskInstruction,
+    int? taskStatus,
   }) async {
     if (!_initialized) await init();
     // Create new conversation first
@@ -890,6 +953,10 @@ class ChatService extends ChangeNotifier {
       c.versionSelections = Map<String, int>.from(
         versionSelections ?? const <String, int>{},
       );
+      // Propagate parent/child orchestration fields
+      if (parentConversationId != null) c.parentConversationId = parentConversationId;
+      if (taskInstruction != null) c.taskInstruction = taskInstruction;
+      if (taskStatus != null) c.taskStatus = taskStatus;
       c.updatedAt = DateTime.now();
       await c.save();
     }
