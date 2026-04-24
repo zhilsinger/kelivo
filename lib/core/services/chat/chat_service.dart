@@ -589,6 +589,7 @@ class ChatService extends ChangeNotifier {
     DateTime? reasoningFinishedAt,
     String? groupId,
     int? version,
+    double? costUsd,
   }) async {
     if (!_initialized) await init();
 
@@ -622,6 +623,7 @@ class ChatService extends ChangeNotifier {
       reasoningFinishedAt: reasoningFinishedAt,
       groupId: groupId,
       version: version,
+      costUsd: costUsd,
     );
 
     await _messagesBox.put(message.id, message);
@@ -658,6 +660,7 @@ class ChatService extends ChangeNotifier {
     int? completionTokens,
     int? cachedTokens,
     int? durationMs,
+    double? costUsd,
   }) async {
     if (!_initialized) return;
 
@@ -678,6 +681,7 @@ class ChatService extends ChangeNotifier {
       completionTokens: completionTokens ?? message.completionTokens,
       cachedTokens: cachedTokens ?? message.cachedTokens,
       durationMs: durationMs ?? message.durationMs,
+      costUsd: costUsd ?? message.costUsd,
     );
 
     await _messagesBox.put(messageId, updatedMessage);
@@ -717,6 +721,7 @@ class ChatService extends ChangeNotifier {
     int? completionTokens,
     int? cachedTokens,
     int? durationMs,
+    double? costUsd,
   }) async {
     if (!_initialized) return;
 
@@ -737,6 +742,7 @@ class ChatService extends ChangeNotifier {
       completionTokens: completionTokens ?? message.completionTokens,
       cachedTokens: cachedTokens ?? message.cachedTokens,
       durationMs: durationMs ?? message.durationMs,
+      costUsd: costUsd ?? message.costUsd,
     );
 
     await _messagesBox.put(messageId, updatedMessage);
