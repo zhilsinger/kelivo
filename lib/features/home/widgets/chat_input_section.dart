@@ -9,6 +9,7 @@ import '../../../core/providers/mcp_provider.dart';
 import '../../../core/providers/quick_phrase_provider.dart';
 import '../../../core/providers/instruction_injection_provider.dart';
 import '../../../core/providers/world_book_provider.dart';
+import '../../../core/providers/prompt_queue_provider.dart';
 import '../../../core/services/api/builtin_tools.dart';
 import '../utils/model_display_helper.dart';
 import 'chat_input_bar.dart';
@@ -60,10 +61,13 @@ class ChatInputSection extends StatelessWidget {
     this.onPickPhotos,
     this.onUploadFiles,
     this.onToggleLearningMode,
-    this.onOpenWorldBook, // 新增世界书支持桌面端
+    this.onOpenWorldBook,
     this.onLongPressLearning,
     this.onClearContext,
     this.onCompressContext,
+    // Queue panel
+    this.onOpenQueuePanel,
+    this.queueCount = 0,
   });
 
   final GlobalKey inputBarKey;
@@ -103,6 +107,9 @@ class ChatInputSection extends StatelessWidget {
   final VoidCallback? onLongPressLearning;
   final VoidCallback? onClearContext;
   final VoidCallback? onCompressContext;
+  // Queue panel
+  final VoidCallback? onOpenQueuePanel;
+  final int queueCount;
 
   @override
   Widget build(BuildContext context) {
@@ -111,12 +118,16 @@ class ChatInputSection extends StatelessWidget {
     final a = ap.currentAssistant;
     final assistantId = a?.id;
 
+    // Read queue count from provider
+    final queueProvider = context.watch<PromptQueueProvider>();
+    final queueCount = queueProvider.queueLength;
+
     // Use unified helper to get model identifiers
     final modelIds = getActiveModelIds(settings, assistant: a);
     final pk = modelIds.providerKey;
     final mid = modelIds.modelId;
 
-    // Enforce model capabilities: disable MCP selection if model doesn't support tools
+    // Enforce model capabilities
     _enforceModelCapabilities(context, settings, ap, a, pk, mid);
 
     // Compute whether built-in search is active
@@ -170,12 +181,15 @@ class ChatInputSection extends StatelessWidget {
       hasQueuedInput: hasQueuedInput,
       queuedPreviewText: queuedPreviewText,
       onCancelQueuedInput: onCancelQueuedInput,
+      // Queue parameters
+      queueCount: queueCount,
+      onOpenQueuePanel: onOpenQueuePanel,
       showMcpButton: _shouldShowMcpButton(context, settings, a, pk, mid),
       mcpActive: _isMcpActive(context, a),
       showQuickPhraseButton: _hasQuickPhrases(context, a),
       onQuickPhrase: onQuickPhrase,
       onLongPressQuickPhrase: onLongPressQuickPhrase,
-      // OCR button: show on desktop for mobile layout, always check settings for tablet layout
+      // OCR button
       showOcrButton: isTablet
           ? (settings.ocrModelProvider != null && settings.ocrModelId != null)
           : (isDesktop &&
