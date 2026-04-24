@@ -7,7 +7,6 @@ import '../../../core/models/chat_message.dart';
 import '../../../core/models/conversation.dart';
 import '../../../core/providers/assistant_provider.dart';
 import '../../../core/providers/settings_provider.dart';
-import '../../../core/providers/prompt_queue_provider.dart';
 import '../../../core/services/api/chat_api_service.dart';
 import '../../../core/services/chat/chat_service.dart';
 import '../../../core/services/logging/flutter_logger.dart';
@@ -85,6 +84,8 @@ class HomeViewModel extends ChangeNotifier {
   final ChatController _chatController;
   final BuildContext _contextProvider;
   late final ChatActions _chatActions;
+  QueuedChatInput? _queuedInput;
+  bool _isDrainingQueuedInput = false;
 
   /// Function to get localized title
   final String Function(BuildContext context) getTitleForLocale;
@@ -140,32 +141,16 @@ class HomeViewModel extends ChangeNotifier {
   bool get isCurrentConversationLoading =>
       _chatController.isCurrentConversationLoading;
 
-  /// Returns the first queued prompt that matches the current conversation.
-  /// Delegates to [PromptQueueProvider].
-  QueuedPrompt? get currentQueuedInput {
+  QueuedChatInput? get currentQueuedInput {
     final cid = currentConversation?.id;
-    if (cid == null) return null;
-    final provider = _safeQueueProvider();
-    if (provider == null) return null;
-    for (final q in provider.queue) {
-      if (q.conversationId == cid) return q;
+    final queued = _queuedInput;
+    if (cid == null || queued == null || queued.conversationId != cid) {
+      return null;
     }
-    return null;
+    return queued;
   }
 
   final ValueNotifier<bool> isProcessingFiles = ValueNotifier<bool>(false);
-
-  // ============================================================================
-  // Internal: Safe access to PromptQueueProvider
-  // ============================================================================
-
-  PromptQueueProvider? _safeQueueProvider() {
-    try {
-      return _contextProvider.read<PromptQueueProvider>();
-    } catch (_) {
-      return null;
-    }
-  }
 
   // ============================================================================
   // Internal Callbacks
@@ -250,17 +235,14 @@ class HomeViewModel extends ChangeNotifier {
 
     final activeConversation = currentConversation!;
     if (_chatController.isConversationLoading(activeConversation.id)) {
-      // Queue the message instead of blocking
-      final provider = _safeQueueProvider();
-      if (provider != null) {
-        final ap = _contextProvider.read<AssistantProvider>();
-        await provider.addToQueue(
-          _cloneInput(input),
-          conversationId: activeConversation.id,
-          assistantId: ap.currentAssistantId,
-        );
-        notifyListeners();
+      if (_queuedInput != null) {
+        return ChatInputSubmissionResult.rejected;
       }
+      _queuedInput = QueuedChatInput(
+        conversationId: activeConversation.id,
+        input: _cloneInput(input),
+      );
+      notifyListeners();
       return ChatInputSubmissionResult.queued;
     }
 
@@ -270,21 +252,12 @@ class HomeViewModel extends ChangeNotifier {
         : ChatInputSubmissionResult.rejected;
   }
 
-  /// Cancel the first queued item for the current conversation and return its input.
-  /// Returns null if nothing is queued or the queue is draining.
   ChatInputData? cancelCurrentQueuedInput() {
-    final provider = _safeQueueProvider();
-    if (provider == null) return null;
-    final cid = currentConversation?.id;
-    if (cid == null) return null;
-    for (final q in provider.queue) {
-      if (q.conversationId == cid) {
-        provider.removeFromQueue(q.id);
-        notifyListeners();
-        return _cloneInput(q.input);
-      }
-    }
-    return null;
+    final queued = currentQueuedInput;
+    if (queued == null || _isDrainingQueuedInput) return null;
+    _queuedInput = null;
+    notifyListeners();
+    return _cloneInput(queued.input);
   }
 
   Future<bool> _sendMessageToConversation(
@@ -333,23 +306,29 @@ class HomeViewModel extends ChangeNotifier {
     );
   }
 
-  /// After a conversation finishes loading, pop the next queued item
-  /// and send it if auto-process is enabled.
   Future<void> _drainQueuedInputIfReady(String conversationId) async {
-    final provider = _safeQueueProvider();
-    if (provider == null) return;
-    if (!provider.hasItems || !provider.isAutoProcess) return;
-
+    if (_isDrainingQueuedInput) return;
+    final queued = _queuedInput;
     final conversation = currentConversation;
-    if (conversation == null || conversation.id != conversationId) return;
+    if (queued == null || conversation == null) return;
+    if (queued.conversationId != conversationId ||
+        conversation.id != conversationId) {
+      return;
+    }
     if (_chatController.isConversationLoading(conversationId)) return;
 
-    // Find the next item for this conversation
-    final next = provider.popNext();
-    if (next == null) return;
+    _isDrainingQueuedInput = true;
+    _queuedInput = null;
     notifyListeners();
 
-    await _sendMessageToConversation(next.input, conversation);
+    final input = queued.input;
+    final success = await _sendMessageToConversation(input, conversation);
+    if (!success) {
+      _queuedInput = queued;
+    }
+
+    _isDrainingQueuedInput = false;
+    notifyListeners();
   }
 
   /// Regenerate response at a specific message.
