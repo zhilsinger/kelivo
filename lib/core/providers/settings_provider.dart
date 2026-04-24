@@ -434,7 +434,6 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.setBool(_orchestrationEnabledKey, value);
   }
 
-
   Future<_MigrationResult> _migrateEmbeddingModelOverrides(
     SharedPreferences prefs,
   ) async {
@@ -549,3 +548,677 @@ class SettingsProvider extends ChangeNotifier {
         }());
       }
     }
+
+    // Cleanup legacy embedding overrides persisted before type-switch safeguards.
+    try {
+      final migrationVersion = prefs.getInt(_migrationsVersionKey) ?? 0;
+      if (providerConfigsLoaded &&
+          migrationVersion < _embeddingOverridesMigrationVersion) {
+        try {
+          FlutterLogger.log(
+            '[SettingsProvider] provider modelOverrides migration start',
+            tag: 'Migration',
+          );
+        } catch (_) {}
+
+        var backupOk = true;
+        if (!prefs.containsKey(_providerConfigsBackupKey)) {
+          final backup = _providerConfigs.map(
+            (k, v) => MapEntry(k, v.toJson()),
+          );
+          backupOk = await prefs.setString(
+            _providerConfigsBackupKey,
+            jsonEncode(backup),
+          );
+          assert(() {
+            debugPrint(
+              '[SettingsProvider] provider configs backup saved before migration.',
+            );
+            return true;
+          }());
+          if (!backupOk) {
+            assert(() {
+              debugPrint(
+                '[SettingsProvider] provider configs backup failed; abort migration.',
+              );
+              return true;
+            }());
+          }
+        }
+
+        if (backupOk) {
+          final result = await _migrateEmbeddingModelOverrides(prefs);
+          if (result != _MigrationResult.failed) {
+            await prefs.setInt(
+              _migrationsVersionKey,
+              _embeddingOverridesMigrationVersion,
+            );
+          }
+          assert(() {
+            if (result == _MigrationResult.applied) {
+              debugPrint(
+                '[SettingsProvider] provider modelOverrides migration applied.',
+              );
+            }
+            return true;
+          }());
+          try {
+            FlutterLogger.log(
+              '[SettingsProvider] provider modelOverrides migration done (result=$result)',
+              tag: 'Migration',
+            );
+          } catch (_) {}
+        }
+      }
+    } catch (e, st) {
+      try {
+        FlutterLogger.log(
+          '[SettingsProvider] provider modelOverrides migration failed: $e\n$st',
+          tag: 'Migration',
+        );
+      } catch (_) {}
+      assert(() {
+        debugPrint(
+          '[SettingsProvider] provider modelOverrides migration failed: $e',
+        );
+        debugPrint('$st');
+        return true;
+      }());
+    }
+
+    // load provider grouping
+    try {
+      final groupsStr = prefs.getString(_providerGroupsKey) ?? '';
+      _providerGroups = groupsStr.isEmpty
+          ? const <ProviderGroup>[]
+          : ProviderGroup.decodeList(groupsStr);
+    } catch (_) {
+      _providerGroups = const <ProviderGroup>[];
+    }
+    try {
+      final mapStr = prefs.getString(_providerGroupMapKey) ?? '';
+      if (mapStr.isNotEmpty) {
+        final raw = jsonDecode(mapStr) as Map<String, dynamic>;
+        _providerGroupMap = raw.map((k, v) => MapEntry(k, v.toString()));
+      } else {
+        _providerGroupMap = <String, String>{};
+      }
+    } catch (_) {
+      _providerGroupMap = <String, String>{};
+    }
+    try {
+      final collapsedStr = prefs.getString(_providerGroupCollapsedKey) ?? '';
+      if (collapsedStr.isNotEmpty) {
+        final raw = jsonDecode(collapsedStr) as Map<String, dynamic>;
+        _providerGroupCollapsed
+          ..clear()
+          ..addAll(
+            raw.map(
+              (k, v) => MapEntry(k, (v is bool) ? v : (v.toString() == 'true')),
+            ),
+          );
+      } else {
+        _providerGroupCollapsed.clear();
+      }
+    } catch (_) {
+      _providerGroupCollapsed.clear();
+    }
+    _providerUngroupedPosition =
+        prefs.getInt(_providerUngroupedPositionKey) ?? _providerGroups.length;
+    // load pinned models
+    final pinned = prefs.getStringList(_pinnedModelsKey) ?? const <String>[];
+    _pinnedModels
+      ..clear()
+      ..addAll(pinned);
+    // load selected model
+    final sel = prefs.getString(_selectedModelKey);
+    if (sel != null && sel.contains('::')) {
+      final parts = sel.split('::');
+      if (parts.length >= 2) {
+        _currentModelProvider = parts[0];
+        _currentModelId = parts.sublist(1).join('::');
+      }
+    }
+    // load title model
+    final titleSel = prefs.getString(_titleModelKey);
+    if (titleSel != null && titleSel.contains('::')) {
+      final parts = titleSel.split('::');
+      if (parts.length >= 2) {
+        _titleModelProvider = parts[0];
+        _titleModelId = parts.sublist(1).join('::');
+      }
+    }
+    // load title prompt
+    final tp = prefs.getString(_titlePromptKey);
+    _titlePrompt = (tp == null || tp.trim().isEmpty) ? defaultTitlePrompt : tp;
+    // load translate model
+    final translateSel = prefs.getString(_translateModelKey);
+    if (translateSel != null && translateSel.contains('::')) {
+      final parts = translateSel.split('::');
+      if (parts.length >= 2) {
+        _translateModelProvider = parts[0];
+        _translateModelId = parts.sublist(1).join('::');
+      }
+    }
+    // load translate prompt
+    final transp = prefs.getString(_translatePromptKey);
+    _translatePrompt = (transp == null || transp.trim().isEmpty)
+        ? defaultTranslatePrompt
+        : transp;
+    // load translate target language
+    final targetLang = prefs.getString(_translateTargetLangKey);
+    if (targetLang != null && targetLang.trim().isNotEmpty) {
+      _translateTargetLang = targetLang.trim();
+    }
+    // load OCR model
+    final ocrSel = prefs.getString(_ocrModelKey);
+    if (ocrSel != null && ocrSel.contains('::')) {
+      final parts = ocrSel.split('::');
+      if (parts.length >= 2) {
+        _ocrModelProvider = parts[0];
+        _ocrModelId = parts.sublist(1).join('::');
+      }
+    }
+    // load OCR prompt
+    final ocrp = prefs.getString(_ocrPromptKey);
+    _ocrPrompt = (ocrp == null || ocrp.trim().isEmpty)
+        ? defaultOcrPrompt
+        : ocrp;
+    // load OCR enabled (only effective when model is configured)
+    _ocrEnabled = prefs.getBool(_ocrEnabledKey) ?? false;
+    if (_ocrModelProvider == null || _ocrModelId == null) {
+      _ocrEnabled = false;
+    }
+    // load summary model
+    final summarySel = prefs.getString(_summaryModelKey);
+    if (summarySel != null && summarySel.contains('::')) {
+      final parts = summarySel.split('::');
+      if (parts.length >= 2) {
+        _summaryModelProvider = parts[0];
+        _summaryModelId = parts.sublist(1).join('::');
+      }
+    }
+    // load summary prompt
+    final summaryp = prefs.getString(_summaryPromptKey);
+    _summaryPrompt = (summaryp == null || summaryp.trim().isEmpty)
+        ? defaultSummaryPrompt
+        : summaryp;
+    // load compress model
+    final compressSel = prefs.getString(_compressModelKey);
+    if (compressSel != null && compressSel.contains('::')) {
+      final parts = compressSel.split('::');
+      if (parts.length >= 2) {
+        _compressModelProvider = parts[0];
+        _compressModelId = parts.sublist(1).join('::');
+      }
+    }
+    // load compress prompt
+    final compressp = prefs.getString(_compressPromptKey);
+    _compressPrompt = (compressp == null || compressp.trim().isEmpty)
+        ? defaultCompressPrompt
+        : compressp;
+    // learning mode
+    _learningModeEnabled = prefs.getBool(_learningModeEnabledKey) ?? false;
+    final lmp = prefs.getString(_learningModePromptKey);
+    _learningModePrompt = (lmp == null || lmp.trim().isEmpty)
+        ? defaultLearningModePrompt
+        : lmp;
+    // load thinking budget (reasoning strength)
+    _thinkingBudget = prefs.getInt(_thinkingBudgetKey);
+
+    // display settings
+    _showUserAvatar = prefs.getBool(_displayShowUserAvatarKey) ?? true;
+    _showModelIcon = prefs.getBool(_displayShowModelIconKey) ?? true;
+    _showModelNameTimestamp =
+        prefs.getBool(_displayShowModelNameTimestampKey) ?? true;
+    _showTokenStats = prefs.getBool(_displayShowTokenStatsKey) ?? true;
+    _showUserNameTimestamp =
+        prefs.getBool(_displayShowUserNameTimestampKey) ?? true;
+    // new split settings: default to the legacy combined setting value for backward compat
+    final legacyUserNameTs = _showUserNameTimestamp;
+    _showUserName = prefs.getBool(_displayShowUserNameKey) ?? legacyUserNameTs;
+    _showUserTimestamp =
+        prefs.getBool(_displayShowUserTimestampKey) ?? legacyUserNameTs;
+    final legacyModelNameTs = _showModelNameTimestamp;
+    _showModelName =
+        prefs.getBool(_displayShowModelNameKey) ?? legacyModelNameTs;
+    _showModelTimestamp =
+        prefs.getBool(_displayShowModelTimestampKey) ?? legacyModelNameTs;
+    _showUserMessageActions =
+        prefs.getBool(_displayShowUserMessageActionsKey) ?? true;
+    _autoCollapseThinking =
+        prefs.getBool(_displayAutoCollapseThinkingKey) ?? true;
+    _collapseThinkingSteps =
+        prefs.getBool(_displayCollapseThinkingStepsKey) ?? false;
+    _showToolResultSummary =
+        prefs.getBool(_displayShowToolResultSummaryKey) ?? false;
+    _showMessageNavButtons = prefs.getBool(_displayShowMessageNavKey) ?? true;
+    _useNewAssistantAvatarUx =
+        prefs.getBool(_displayUseNewAssistantAvatarUxKey) ?? false;
+    _showProviderInModelCapsule =
+        prefs.getBool(_displayShowProviderInModelCapsuleKey) ?? true;
+    _showProviderInChatMessage =
+        prefs.getBool(_displayShowProviderInChatMessageKey) ?? false;
+    _hapticsOnGenerate = prefs.getBool(_displayHapticsOnGenerateKey) ?? false;
+    _hapticsOnDrawer = prefs.getBool(_displayHapticsOnDrawerKey) ?? true;
+    _hapticsGlobalEnabled =
+        prefs.getBool(_displayHapticsGlobalEnabledKey) ?? true;
+    _hapticsIosSwitch = prefs.getBool(_displayHapticsIosSwitchKey) ?? true;
+    _hapticsOnListItemTap =
+        prefs.getBool(_displayHapticsOnListItemTapKey) ?? true;
+    _hapticsOnCardTap = prefs.getBool(_displayHapticsOnCardTapKey) ?? true;
+    // Apply global haptics to service layer
+    Haptics.setEnabled(_hapticsGlobalEnabled);
+    _showAppUpdates = prefs.getBool(_displayShowAppUpdatesKey) ?? true;
+    _keepSidebarOpenOnAssistantTap =
+        prefs.getBool(_displayKeepSidebarOpenOnAssistantTapKey) ?? false;
+    _keepSidebarOpenOnTopicTap =
+        prefs.getBool(_displayKeepSidebarOpenOnTopicTapKey) ?? false;
+    _keepAssistantListExpandedOnSidebarClose =
+        prefs.getBool(_displayKeepAssistantListExpandedOnSidebarCloseKey) ??
+        false;
+    _requestLogEnabled = prefs.getBool(_requestLogEnabledKey) ?? false;
+    await RequestLogger.setEnabled(_requestLogEnabled);
+    _flutterLogEnabled = prefs.getBool(_flutterLogEnabledKey) ?? false;
+    await FlutterLogger.setEnabled(_flutterLogEnabled);
+    _logSaveOutput = prefs.getBool(_logSaveOutputKey) ?? true;
+    RequestLogger.saveOutput = _logSaveOutput;
+    _logAutoDeleteDays = prefs.getInt(_logAutoDeleteDaysKey) ?? 0;
+    _logMaxSizeMB = prefs.getInt(_logMaxSizeMBKey) ?? 0;
+    // Run log cleanup based on current settings
+    RequestLogger.cleanupLogs(
+      autoDeleteDays: _logAutoDeleteDays,
+      maxSizeMB: _logMaxSizeMB,
+    );
+    _newChatOnLaunch = prefs.getBool(_displayNewChatOnLaunchKey) ?? true;
+    _newChatOnAssistantSwitch =
+        prefs.getBool(_displayNewChatOnAssistantSwitchKey) ?? false;
+    _newChatAfterDelete = prefs.getBool(_displayNewChatAfterDeleteKey) ?? false;
+    // Enter to send on mobile: iOS defaults to true, Android defaults to false
+    final enterToSendPref = prefs.getBool(_displayEnterToSendOnMobileKey);
+    if (enterToSendPref == null) {
+      _enterToSendOnMobile = Platform.isIOS;
+      await prefs.setBool(_displayEnterToSendOnMobileKey, _enterToSendOnMobile);
+    } else {
+      _enterToSendOnMobile = enterToSendPref;
+    }
+    // Desktop send shortcut: Enter (default) or Ctrl/Cmd+Enter
+    final sendShortcutStr = prefs.getString(_desktopSendShortcutKey);
+    switch (sendShortcutStr) {
+      case 'ctrlEnter':
+        _desktopSendShortcut = DesktopSendShortcut.ctrlEnter;
+        break;
+      case 'enter':
+      default:
+        _desktopSendShortcut = DesktopSendShortcut.enter;
+    }
+    _chatFontScale = prefs.getDouble(_displayChatFontScaleKey) ?? 1.0;
+    _autoScrollEnabled = prefs.getBool(_displayAutoScrollEnabledKey) ?? true;
+    _autoScrollIdleSeconds =
+        prefs.getInt(_displayAutoScrollIdleSecondsKey) ?? 8;
+    _chatBackgroundMaskStrength =
+        prefs.getDouble(_displayChatBackgroundMaskStrengthKey) ?? 1.0;
+    final pureBgPref = prefs.getBool(_displayUsePureBackgroundKey);
+    if (pureBgPref == null) {
+      final isDesktop =
+          Platform.isMacOS || Platform.isWindows || Platform.isLinux;
+      _usePureBackground = isDesktop;
+      await prefs.setBool(_displayUsePureBackgroundKey, _usePureBackground);
+    } else {
+      _usePureBackground = pureBgPref;
+    }
+    // display: markdown/math rendering
+    _enableDollarLatex = prefs.getBool(_displayEnableDollarLatexKey) ?? true;
+    _enableMathRendering =
+        prefs.getBool(_displayEnableMathRenderingKey) ?? true;
+    _enableUserMarkdown = prefs.getBool(_displayEnableUserMarkdownKey) ?? true;
+    _enableReasoningMarkdown =
+        prefs.getBool(_displayEnableReasoningMarkdownKey) ?? true;
+    _enableAssistantMarkdown =
+        prefs.getBool(_displayEnableAssistantMarkdownKey) ?? true;
+    _showChatListDate = prefs.getBool(_displayShowChatListDateKey) ?? false;
+    _mobileCodeBlockWrap =
+        prefs.getBool(_displayMobileCodeBlockWrapKey) ?? false;
+    _autoCollapseCodeBlock =
+        prefs.getBool(_displayAutoCollapseCodeBlockKey) ?? false;
+    _autoCollapseCodeBlockLines =
+        (prefs.getInt(_displayAutoCollapseCodeBlockLinesKey) ?? 2).clamp(
+          1,
+          999,
+        );
+    _desktopAutoSwitchTopics =
+        prefs.getBool(_displayDesktopAutoSwitchTopicsKey) ?? false;
+    // Desktop: tray settings (default enabled on desktop platforms)
+    final trayPref = prefs.getBool(_displayDesktopShowTrayKey);
+    if (trayPref == null) {
+      final isDesktop =
+          Platform.isMacOS || Platform.isWindows || Platform.isLinux;
+      _desktopShowTray = isDesktop;
+      await prefs.setBool(_displayDesktopShowTrayKey, _desktopShowTray);
+    } else {
+      _desktopShowTray = trayPref;
+    }
+    final minimizeTrayPref = prefs.getBool(
+      _displayDesktopMinimizeToTrayOnCloseKey,
+    );
+    if (minimizeTrayPref == null) {
+      _desktopMinimizeToTrayOnClose = _desktopShowTray;
+      await prefs.setBool(
+        _displayDesktopMinimizeToTrayOnCloseKey,
+        _desktopMinimizeToTrayOnClose,
+      );
+    } else {
+      // Enforce invariant: cannot minimize to tray if tray is hidden.
+      _desktopMinimizeToTrayOnClose = minimizeTrayPref && _desktopShowTray;
+      if (minimizeTrayPref && !_desktopShowTray) {
+        await prefs.setBool(
+          _displayDesktopMinimizeToTrayOnCloseKey,
+          _desktopMinimizeToTrayOnClose,
+        );
+      }
+    }
+    // desktop: topic panel placement + right sidebar open state
+    final topicPos = prefs.getString(_desktopTopicPositionKey);
+    switch (topicPos) {
+      case 'right':
+        _desktopTopicPosition = DesktopTopicPosition.right;
+        break;
+      case 'left':
+      default:
+        _desktopTopicPosition = DesktopTopicPosition.left;
+    }
+    _desktopRightSidebarOpen =
+        prefs.getBool(_desktopRightSidebarOpenKey) ?? true;
+    // Chat message background style (default | frosted | solid)
+    final bgStyleStr =
+        prefs.getString(_displayChatMessageBackgroundStyleKey) ?? 'default';
+    switch (bgStyleStr) {
+      case 'frosted':
+        _chatMessageBackgroundStyle = ChatMessageBackgroundStyle.frosted;
+        break;
+      case 'solid':
+        _chatMessageBackgroundStyle = ChatMessageBackgroundStyle.solid;
+        break;
+      default:
+        _chatMessageBackgroundStyle = ChatMessageBackgroundStyle.defaultStyle;
+    }
+    // desktop UI
+    _desktopSidebarWidth = prefs.getDouble(_desktopSidebarWidthKey) ?? 300;
+    _desktopSidebarOpen = prefs.getBool(_desktopSidebarOpenKey) ?? true;
+    _desktopRightSidebarWidth =
+        prefs.getDouble(_desktopRightSidebarWidthKey) ?? 300;
+    // Load app locale; default to follow system on first launch
+    _appLocaleTag = prefs.getString(_appLocaleKey);
+    if (_appLocaleTag == null || _appLocaleTag!.isEmpty) {
+      _appLocaleTag = 'system';
+      await prefs.setString(_appLocaleKey, 'system');
+    }
+
+    // Android background chat mode (Android only; default ON on first run)
+    try {
+      final rawBg = prefs.getString(_androidBackgroundChatModeKey);
+      if (rawBg == null) {
+        // Default to OFF to avoid permission prompts on first launch
+        _androidBackgroundChatMode = AndroidBackgroundChatMode.off;
+        await prefs.setString(_androidBackgroundChatModeKey, 'off');
+      } else {
+        switch (rawBg) {
+          case 'on_notify':
+            _androidBackgroundChatMode = AndroidBackgroundChatMode.onNotify;
+            break;
+          case 'on':
+            _androidBackgroundChatMode = AndroidBackgroundChatMode.on;
+            break;
+          case 'off':
+          default:
+            _androidBackgroundChatMode = AndroidBackgroundChatMode.off;
+        }
+      }
+    } catch (_) {
+      _androidBackgroundChatMode = AndroidBackgroundChatMode.off;
+    }
+
+    // load search settings
+    final searchServicesStr = prefs.getString(_searchServicesKey);
+    if (searchServicesStr != null && searchServicesStr.isNotEmpty) {
+      try {
+        final list = jsonDecode(searchServicesStr) as List;
+        _searchServices = list
+            .map(
+              (e) => SearchServiceOptions.fromJson(e as Map<String, dynamic>),
+            )
+            .toList();
+      } catch (_) {}
+    }
+    final searchCommonStr = prefs.getString(_searchCommonKey);
+    if (searchCommonStr != null && searchCommonStr.isNotEmpty) {
+      try {
+        _searchCommonOptions = SearchCommonOptions.fromJson(
+          jsonDecode(searchCommonStr) as Map<String, dynamic>,
+        );
+      } catch (_) {}
+    }
+    _searchServiceSelected = prefs.getInt(_searchSelectedKey) ?? 0;
+    _searchEnabled = prefs.getBool(_searchEnabledKey) ?? false;
+    _searchAutoTestOnLaunch =
+        prefs.getBool(_searchAutoTestOnLaunchKey) ?? false;
+
+    // load global proxy
+    _globalProxyEnabled = prefs.getBool(_globalProxyEnabledKey) ?? false;
+    _globalProxyType = prefs.getString(_globalProxyTypeKey) ?? 'http';
+    _globalProxyHost = prefs.getString(_globalProxyHostKey) ?? '';
+    _globalProxyPort = prefs.getString(_globalProxyPortKey) ?? '8080';
+    _globalProxyUsername = prefs.getString(_globalProxyUsernameKey) ?? '';
+    _globalProxyPassword = prefs.getString(_globalProxyPasswordKey) ?? '';
+    final bypass = prefs.getString(_globalProxyBypassKey);
+    if (bypass == null) {
+      _globalProxyBypass = _defaultGlobalProxyBypassRules;
+      await prefs.setString(_globalProxyBypassKey, _globalProxyBypass);
+    } else {
+      _globalProxyBypass = bypass;
+    }
+
+    // load network TTS services
+    try {
+      final ttsStr = prefs.getString(_ttsServicesKey) ?? '';
+      if (ttsStr.isNotEmpty) {
+        final list = jsonDecode(ttsStr) as List;
+        _ttsServices = [
+          for (final e in list)
+            if (e is Map<String, dynamic>)
+              TtsServiceOptions.fromJson(e)
+            else
+              TtsServiceOptions.fromJson(Map<String, dynamic>.from(e as Map)),
+        ];
+      } else {
+        _ttsServices = const <TtsServiceOptions>[];
+      }
+    } catch (_) {
+      _ttsServices = const <TtsServiceOptions>[];
+    }
+    _ttsServiceSelected = prefs.getInt(_ttsSelectedKey) ?? -1;
+    if (_ttsServiceSelected >= _ttsServices.length) {
+      _ttsServiceSelected = _ttsServices.isEmpty ? -1 : 0;
+      await prefs.setInt(_ttsSelectedKey, _ttsServiceSelected);
+    }
+    // webdav config
+    final webdavStr = prefs.getString(_webDavConfigKey);
+    if (webdavStr != null && webdavStr.isNotEmpty) {
+      try {
+        _webDavConfig = WebDavConfig.fromJson(
+          jsonDecode(webdavStr) as Map<String, dynamic>,
+        );
+      } catch (_) {}
+    }
+    // s3 config
+    final s3Str = prefs.getString(_s3ConfigKey);
+    if (s3Str != null && s3Str.isNotEmpty) {
+      try {
+        _s3Config = S3Config.fromJson(
+          jsonDecode(s3Str) as Map<String, dynamic>,
+        );
+      } catch (_) {}
+    }
+    if (_providerConfigs.isEmpty) {
+      // Seed a couple of sensible defaults on first launch, but do not recreate
+      // providers implicitly during later reads (e.g., when switching chats).
+      ensureProviderConfig('KelivoIN', defaultName: 'KelivoIN');
+      ensureProviderConfig('Tensdaq', defaultName: 'Tensdaq');
+      ensureProviderConfig('SiliconFlow', defaultName: 'SiliconFlow');
+      ensureProviderConfig('AIhubmix', defaultName: 'AIhubmix');
+    }
+
+    // kick off a one-time connectivity test for services (exclude local Bing)
+    if (_searchAutoTestOnLaunch) {
+      _initSearchConnectivityTests();
+    }
+
+    // Attempt to reload any user-installed local fonts (mobile platforms)
+    await _reloadLocalFontsIfAny();
+
+    // Final cleanup pass for provider order + grouping state (best-effort).
+    if (_cleanupProviderOrderAndGrouping()) {
+      try {
+        await prefs.setStringList(_providersOrderKey, _providersOrder);
+        await prefs.setString(
+          _providerGroupMapKey,
+          jsonEncode(_providerGroupMap),
+        );
+        await prefs.setString(
+          _providerGroupCollapsedKey,
+          jsonEncode(_providerGroupCollapsed),
+        );
+      } catch (_) {}
+    }
+
+    notifyListeners();
+  }
+
+  Future<void> setGlobalProxyEnabled(bool v) async {
+    _globalProxyEnabled = v;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_globalProxyEnabledKey, _globalProxyEnabled);
+  }
+
+  Future<void> setGlobalProxyType(String v) async {
+    _globalProxyType = v.trim().isEmpty ? 'http' : v.trim();
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_globalProxyTypeKey, _globalProxyType);
+  }
+
+  Future<void> setGlobalProxyHost(String v) async {
+    _globalProxyHost = v.trim();
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_globalProxyHostKey, _globalProxyHost);
+  }
+
+  Future<void> setGlobalProxyPort(String v) async {
+    _globalProxyPort = v.trim();
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_globalProxyPortKey, _globalProxyPort);
+  }
+
+  Future<void> setGlobalProxyUsername(String v) async {
+    _globalProxyUsername = v;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_globalProxyUsernameKey, _globalProxyUsername);
+  }
+
+  Future<void> setGlobalProxyPassword(String v) async {
+    _globalProxyPassword = v;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_globalProxyPasswordKey, _globalProxyPassword);
+  }
+
+  Future<void> setGlobalProxyBypass(String v) async {
+    _globalProxyBypass = v.trim();
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_globalProxyBypassKey, _globalProxyBypass);
+  }
+
+  // Apply global proxy to Dart IO layer; provider-level proxies take precedence at call sites.
+  String _lastProxySignature = '';
+  void applyGlobalProxyOverridesIfNeeded() {
+    try {
+      final enabled = _globalProxyEnabled;
+      final host = _globalProxyHost.trim();
+      final portStr = _globalProxyPort.trim();
+      final user = _globalProxyUsername.trim();
+      final pass = _globalProxyPassword;
+      final type = _globalProxyType;
+      final bypass = _globalProxyBypass;
+      final sig = [enabled, type, host, portStr, user, pass, bypass].join('|');
+      if (_lastProxySignature == sig) return;
+      _lastProxySignature = sig;
+      if (!enabled || host.isEmpty || portStr.isEmpty) {
+        HttpOverrides.global = null;
+        return;
+      }
+      final port = int.tryParse(portStr) ?? 8080;
+      if (type == 'socks5') {
+        HttpOverrides.global = _SocksProxyHttpOverrides(
+          host: host,
+          port: port,
+          username: user.isEmpty ? null : user,
+          password: pass,
+          bypassRules: bypass,
+        );
+      } else {
+        HttpOverrides.global = _ProxyHttpOverrides(
+          host: host,
+          port: port,
+          username: user.isEmpty ? null : user,
+          password: pass,
+          bypassRules: bypass,
+        );
+      }
+    } catch (_) {
+      // ignore
+    }
+  }
+
+  // ===== Supabase Config =====
+  Future<void> setSupabaseConfig(String url, String anonKey) async {
+    _supabaseUrl = url.trim();
+    _supabaseAnonKey = anonKey.trim();
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_supabaseUrlKey, _supabaseUrl);
+    await prefs.setString(_supabaseAnonKeyKey, _supabaseAnonKey);
+  }
+
+  Future<void> clearSupabaseConfig() async {
+    _supabaseUrl = '';
+    _supabaseAnonKey = '';
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_supabaseUrlKey);
+    await prefs.remove(_supabaseAnonKeyKey);
+  }
+
+  Future<void> setTtsServices(List<TtsServiceOptions> v) async {
+    _ttsServices = List.unmodifiable(v);
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    final list = v.map((e) => e.toJson()).toList();
+    await prefs.setString(_ttsServicesKey, jsonEncode(list));
+    if (_ttsServiceSelected >= _ttsServices.length) {
+      _ttsServiceSelected = _ttsServices.isEmpty ? -1 : 0;
+      await prefs.setInt(_ttsSelectedKey, _ttsServiceSelected);
+    }
+  }
+
+  Future<void> setTtsServiceSelected(int index) async {
+    _ttsServiceSelected = index;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_ttsSelectedKey, _ttsServiceSelected);
+  }
+}
