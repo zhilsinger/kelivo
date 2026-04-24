@@ -3,29 +3,31 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../models/chat_input_data.dart';
+import '../models/prompt_queue_item.dart';
 
 /// Provider that manages a multi-item, persistent prompt queue.
 ///
-/// When the LLM is busy generating, user messages can be queued here.
-/// When generation completes and auto-process is enabled, the next item
-/// is popped and sent automatically.
+/// This is a COMPLETELY SEPARATE parallel system from the existing
+/// single-item transient queue ([QueuedChatInput] / [_queuedInput]).
+/// Both coexist independently — this provider does NOT replace or
+/// touch the old queue infrastructure.
 ///
 /// Storage: SharedPreferences key 'prompt_queue_v1' (JSON array).
 class PromptQueueProvider extends ChangeNotifier {
-  List<QueuedPrompt> _queue = [];
+  List<PromptQueueItem> _queue = [];
   bool _isAutoProcess = true;
 
   // ============================================================================
   // Getters
   // ============================================================================
 
-  List<QueuedPrompt> get queue => List.unmodifiable(_queue);
+  List<PromptQueueItem> get queue => List.unmodifiable(_queue);
   int get queueLength => _queue.length;
   bool get hasItems => _queue.isNotEmpty;
   bool get isAutoProcess => _isAutoProcess;
 
   /// The first item in the queue, or null if empty.
-  QueuedPrompt? get nextPrompt => _queue.isNotEmpty ? _queue.first : null;
+  PromptQueueItem? get nextPrompt => _queue.isNotEmpty ? _queue.first : null;
 
   // ============================================================================
   // Initialization
@@ -40,12 +42,12 @@ class PromptQueueProvider extends ChangeNotifier {
   // ============================================================================
 
   /// Add a new prompt to the end of the queue.
-  Future<QueuedPrompt> addToQueue(
+  Future<PromptQueueItem> addToQueue(
     ChatInputData input, {
     required String conversationId,
     String? assistantId,
   }) async {
-    final prompt = QueuedPrompt(
+    final item = PromptQueueItem(
       id: const Uuid().v4(),
       conversationId: conversationId,
       input: input,
@@ -53,9 +55,9 @@ class PromptQueueProvider extends ChangeNotifier {
       createdAt: DateTime.now(),
       assistantId: assistantId,
     );
-    _queue.add(prompt);
+    _queue.add(item);
     await _saveQueue();
-    return prompt;
+    return item;
   }
 
   /// Remove a prompt by its ID.
@@ -110,7 +112,7 @@ class PromptQueueProvider extends ChangeNotifier {
 
   /// Pop and return the first item in the queue, removing it.
   /// Returns null if queue is empty.
-  QueuedPrompt? popNext() {
+  PromptQueueItem? popNext() {
     if (_queue.isEmpty) return null;
     final item = _queue.removeAt(0);
     _reindex();
@@ -130,7 +132,9 @@ class PromptQueueProvider extends ChangeNotifier {
       try {
         final list = jsonDecode(str) as List;
         _queue = list
-            .map((e) => QueuedPrompt.fromJson(e as Map<String, dynamic>))
+            .map(
+              (e) => PromptQueueItem.fromJson(e as Map<String, dynamic>),
+            )
             .toList();
       } catch (_) {
         _queue = [];
@@ -145,8 +149,7 @@ class PromptQueueProvider extends ChangeNotifier {
 
   Future<void> _saveQueue() async {
     final prefs = await SharedPreferences.getInstance();
-    final json =
-        jsonEncode(_queue.map((q) => q.toJson()).toList());
+    final json = jsonEncode(_queue.map((q) => q.toJson()).toList());
     await prefs.setString('prompt_queue_v1', json);
     notifyListeners();
   }
