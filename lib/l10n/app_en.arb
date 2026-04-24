@@ -28,12 +28,8 @@
   "settingsPageFilesCount": "{count} files · {size}",
   "@settingsPageFilesCount": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "size": {
-        "type": "String"
-      }
+      "count": { "type": "int" },
+      "size": { "type": "String" }
     }
   },
   "storageSpacePageTitle": "Storage Space",
@@ -42,19 +38,11 @@
   "storageSpaceTotalLabel": "Used",
   "storageSpaceClearableLabel": "Clearable: {size}",
   "@storageSpaceClearableLabel": {
-    "placeholders": {
-      "size": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "size": { "type": "String" } }
   },
   "storageSpaceClearableHint": "Safe to clear: {size}",
   "@storageSpaceClearableHint": {
-    "placeholders": {
-      "size": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "size": { "type": "String" } }
   },
   "storageSpaceCategoryImages": "Images",
   "storageSpaceCategoryFiles": "Files",
@@ -65,11 +53,7 @@
   "storageSpaceCategoryOther": "App",
   "storageSpaceFilesCount": "{count} files",
   "@storageSpaceFilesCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
+    "placeholders": { "count": { "type": "int" } }
   },
   "storageSpaceSafeToClearHint": "Safe to clear. This will not affect your chat history.",
   "storageSpaceNotSafeToClearHint": "May affect your chat history. Delete with care.",
@@ -88,28 +72,16 @@
   "storageSpaceClearConfirmTitle": "Confirm clear",
   "storageSpaceClearConfirmMessage": "Clear {targetName}?",
   "@storageSpaceClearConfirmMessage": {
-    "placeholders": {
-      "targetName": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "targetName": { "type": "String" } }
   },
   "storageSpaceClearButton": "Clear",
   "storageSpaceClearDone": "{targetName} cleared",
   "@storageSpaceClearDone": {
-    "placeholders": {
-      "targetName": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "targetName": { "type": "String" } }
   },
   "storageSpaceClearFailed": "Clear failed: {error}",
   "@storageSpaceClearFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "error": { "type": "String" } }
   },
   "storageSpaceClearAvatarCacheButton": "Clear Avatar Cache",
   "storageSpaceClearCacheButton": "Clear Cache",
@@ -118,38 +90,22 @@
   "storageSpaceDeleteConfirmTitle": "Confirm deletion",
   "storageSpaceDeleteUploadsConfirmMessage": "Delete {count} items? Attachments in chat history may become unavailable.",
   "@storageSpaceDeleteUploadsConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
+    "placeholders": { "count": { "type": "int" } }
   },
   "storageSpaceDeletedUploadsDone": "Deleted {count} items",
   "@storageSpaceDeletedUploadsDone": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
+    "placeholders": { "count": { "type": "int" } }
   },
   "storageSpaceNoUploads": "No items",
   "storageSpaceSelectAll": "Select all",
   "storageSpaceClearSelection": "Clear selection",
   "storageSpaceSelectedCount": "{count} selected",
   "@storageSpaceSelectedCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
+    "placeholders": { "count": { "type": "int" } }
   },
   "storageSpaceUploadsCount": "{count} items",
   "@storageSpaceUploadsCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
+    "placeholders": { "count": { "type": "int" } }
   },
   "settingsPageAboutSection": "About",
   "settingsPageAbout": "About",
@@ -180,12 +136,8 @@
   "homePageClearContextWithCount": "Clear Context ({actual}/{configured})",
   "@homePageClearContextWithCount": {
     "placeholders": {
-      "actual": {
-        "type": "String"
-      },
-      "configured": {
-        "type": "String"
-      }
+      "actual": { "type": "String" },
+      "configured": { "type": "String" }
     }
   },
   "homePageDefaultAssistant": "Default Assistant",
@@ -199,24 +151,12 @@
   "assistantProviderSampleAssistantSystemPrompt": "You are {model_name}, an AI assistant who gladly provides accurate and helpful assistance. The current time is {cur_datetime}, the device language is {locale}, timezone is {timezone}, the user is using {device_info}, version {system_version}. If the user does not explicitly specify otherwise, please use the user's device language when replying.",
   "@assistantProviderSampleAssistantSystemPrompt": {
     "placeholders": {
-      "model_name": {
-        "type": "String"
-      },
-      "cur_datetime": {
-        "type": "String"
-      },
-      "locale": {
-        "type": "String"
-      },
-      "timezone": {
-        "type": "String"
-      },
-      "device_info": {
-        "type": "String"
-      },
-      "system_version": {
-        "type": "String"
-      }
+      "model_name": { "type": "String" },
+      "cur_datetime": { "type": "String" },
+      "locale": { "type": "String" },
+      "timezone": { "type": "String" },
+      "device_info": { "type": "String" },
+      "system_version": { "type": "String" }
     }
   },
   "displaySettingsPageLanguageTitle": "App Language",
@@ -256,16 +196,12 @@
   "displaySettingsPageLanguageChineseLabel": "Simplified Chinese",
   "displaySettingsPageLanguageEnglishLabel": "English",
   "homePagePleaseSelectModel": "Please select a model first",
-  "homePageAudioAttachmentUnsupported": "The current model does not support audio attachments. Switch to a model that supports audio input or remove the audio file and try again.",
+  "homePageAudioAttachmentUnsupported": "The current model does not support audio attachments.",
   "homePagePleaseSetupTranslateModel": "Please set a translation model first",
   "homePageTranslating": "Translating...",
   "homePageTranslateFailed": "Translation failed: {error}",
   "@homePageTranslateFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "error": { "type": "String" } }
   },
   "chatServiceDefaultConversationTitle": "New Chat",
   "userProviderDefaultUserName": "User",
@@ -394,11 +330,7 @@
   "multiKeyPageAddHint": "Enter API keys, separated by comma or space",
   "multiKeyPageImportedSnackbar": "Imported {n} keys",
   "@multiKeyPageImportedSnackbar": {
-    "placeholders": {
-      "n": {
-        "type": "int"
-      }
-    }
+    "placeholders": { "n": { "type": "int" } }
   },
   "multiKeyPagePleaseAddModel": "Please add a model first",
   "multiKeyPageTotal": "Total",
@@ -450,11 +382,7 @@
   "codeBlockPreviewButton": "Preview",
   "codeBlockCollapsedLines": "… {n} lines folded",
   "@codeBlockCollapsedLines": {
-    "placeholders": {
-      "n": {
-        "type": "int"
-      }
-    }
+    "placeholders": { "n": { "type": "int" } }
   },
   "htmlPreviewNotSupportedOnLinux": "HTML preview is not supported on Linux",
   "assistantEditSampleUser": "User",
@@ -465,12 +393,8 @@
   "assistantEditMcpToolsCountTag": "Tools: {enabled}/{total}",
   "@assistantEditMcpToolsCountTag": {
     "placeholders": {
-      "enabled": {
-        "type": "String"
-      },
-      "total": {
-        "type": "String"
-      }
+      "enabled": { "type": "String" },
+      "total": { "type": "String" }
     }
   },
   "assistantEditModelUseGlobalDefault": "Use global default",
@@ -625,11 +549,7 @@
   "reasoningBudgetSheetTitle": "Reasoning Chain Strength",
   "reasoningBudgetSheetCurrentLevel": "Current Level: {level}",
   "@reasoningBudgetSheetCurrentLevel": {
-    "placeholders": {
-      "level": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "level": { "type": "String" } }
   },
   "reasoningBudgetSheetOffSubtitle": "Turn off reasoning, answer directly",
   "reasoningBudgetSheetAutoSubtitle": "Let the model decide reasoning level automatically",
@@ -641,27 +561,15 @@
   "reasoningBudgetSheetCustomHint": "e.g. 2048 (-1 auto, 0 off)",
   "chatMessageWidgetFileNotFound": "File not found: {fileName}",
   "@chatMessageWidgetFileNotFound": {
-    "placeholders": {
-      "fileName": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "fileName": { "type": "String" } }
   },
   "chatMessageWidgetCannotOpenFile": "Cannot open file: {message}",
   "@chatMessageWidgetCannotOpenFile": {
-    "placeholders": {
-      "message": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "message": { "type": "String" } }
   },
   "chatMessageWidgetOpenFileError": "Failed to open file: {error}",
   "@chatMessageWidgetOpenFileError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "error": { "type": "String" } }
   },
   "chatMessageWidgetCopiedToClipboard": "Copied to clipboard",
   "chatMessageWidgetResendTooltip": "Resend",
@@ -672,20 +580,12 @@
   "chatMessageWidgetCitationNotFound": "Citation source not found",
   "chatMessageWidgetCannotOpenUrl": "Cannot open link: {url}",
   "@chatMessageWidgetCannotOpenUrl": {
-    "placeholders": {
-      "url": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "url": { "type": "String" } }
   },
   "chatMessageWidgetOpenLinkError": "Failed to open link",
   "chatMessageWidgetCitationsTitle": "Citations ({count})",
   "@chatMessageWidgetCitationsTitle": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
+    "placeholders": { "count": { "type": "int" } }
   },
   "chatMessageWidgetRegenerateTooltip": "Regenerate",
   "chatMessageWidgetRegenerateConfirmTitle": "Confirm Regenerate",
@@ -702,28 +602,16 @@
   "chatMessageWidgetDeleteMemory": "Delete Memory",
   "chatMessageWidgetWebSearch": "Web Search: {query}",
   "@chatMessageWidgetWebSearch": {
-    "placeholders": {
-      "query": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "query": { "type": "String" } }
   },
   "chatMessageWidgetBuiltinSearch": "Built-in Search",
   "chatMessageWidgetToolCall": "Tool Call: {name}",
   "@chatMessageWidgetToolCall": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "name": { "type": "String" } }
   },
   "chatMessageWidgetToolResult": "Tool Result: {name}",
   "@chatMessageWidgetToolResult": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "name": { "type": "String" } }
   },
   "chatMessageWidgetNoResultYet": "(No result yet)",
   "chatMessageWidgetArguments": "Arguments",
@@ -731,19 +619,11 @@
   "chatMessageWidgetImages": "Images",
   "chatMessageWidgetCitationsCount": "Citations ({count})",
   "@chatMessageWidgetCitationsCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
+    "placeholders": { "count": { "type": "int" } }
   },
   "chatSelectionSelectedCountTitle": "Selected {count} message(s)",
   "@chatSelectionSelectedCountTitle": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
+    "placeholders": { "count": { "type": "int" } }
   },
   "chatSelectionExportTxt": "TXT",
   "chatSelectionExportMd": "MD",
@@ -755,19 +635,11 @@
   "messageExportSheetExporting": "Exporting…",
   "messageExportSheetExportFailed": "Export failed: {error}",
   "@messageExportSheetExportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "error": { "type": "String" } }
   },
   "messageExportSheetExportedAs": "Exported as {filename}",
   "@messageExportSheetExportedAs": {
-    "placeholders": {
-      "filename": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "filename": { "type": "String" } }
   },
   "displaySettingsPageEnableDollarLatexTitle": "Inline $...$ Rendering",
   "displaySettingsPageEnableDollarLatexSubtitle": "Render inline math inside $...$",
@@ -799,11 +671,7 @@
   "imagePreviewSheetSaveSuccess": "Saved to gallery",
   "imagePreviewSheetSaveFailed": "Save failed: {error}",
   "@imagePreviewSheetSaveFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "error": { "type": "String" } }
   },
   "sideDrawerMenuRename": "Rename",
   "sideDrawerMenuPin": "Pin",
@@ -813,11 +681,7 @@
   "sideDrawerMenuDelete": "Delete",
   "sideDrawerDeleteSnackbar": "Deleted \"{title}\"",
   "@sideDrawerDeleteSnackbar": {
-    "placeholders": {
-      "title": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "title": { "type": "String" } }
   },
   "sideDrawerRenameHint": "Enter new name",
   "sideDrawerCancel": "Cancel",
@@ -842,29 +706,17 @@
   "sideDrawerGlobalSearchNoResults": "No matching sessions",
   "sideDrawerGlobalSearchResultCount": "{count} results",
   "@sideDrawerGlobalSearchResultCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
+    "placeholders": { "count": { "type": "int" } }
   },
   "sideDrawerUpdateTitle": "New version: {version}",
   "@sideDrawerUpdateTitle": {
-    "placeholders": {
-      "version": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "version": { "type": "String" } }
   },
   "sideDrawerUpdateTitleWithBuild": "New version: {version} ({build})",
   "@sideDrawerUpdateTitleWithBuild": {
     "placeholders": {
-      "version": {
-        "type": "String"
-      },
-      "build": {
-        "type": "int"
-      }
+      "version": { "type": "String" },
+      "build": { "type": "int" }
     }
   },
   "sideDrawerLinkCopied": "Link copied",
@@ -916,12 +768,8 @@
   "mcpPageToolsCount": "Tools: {enabled}/{total}",
   "@mcpPageToolsCount": {
     "placeholders": {
-      "enabled": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
+      "enabled": { "type": "int" },
+      "total": { "type": "int" }
     }
   },
   "mcpPageConnectionFailed": "Connection failed",
@@ -941,12 +789,8 @@
   "mcpConversationSheetToolsCount": "Tools: {enabled}/{total}",
   "@mcpConversationSheetToolsCount": {
     "placeholders": {
-      "enabled": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
+      "enabled": { "type": "int" },
+      "total": { "type": "int" }
     }
   },
   "mcpServerEditSheetEnabledLabel": "Enabled",
@@ -975,18 +819,14 @@
   "defaultModelPageChatModelTitle": "Chat Model",
   "defaultModelPageChatModelSubtitle": "Global default chat model",
   "defaultModelPageTitleModelTitle": "Title Summary Model",
-  "defaultModelPageTitleModelSubtitle": "Used for summarizing conversation titles; prefer fast & cheap models",
+  "defaultModelPageTitleModelSubtitle": "Used for summarizing conversation titles",
   "defaultModelPageSummaryModelTitle": "Summary Model",
-  "defaultModelPageSummaryModelSubtitle": "Used for generating conversation summaries; prefer fast and cheap models",
+  "defaultModelPageSummaryModelSubtitle": "Generates conversation summaries",
   "assistantEditRecentChatsSummaryFrequencyTitle": "Summary Refresh Frequency",
   "assistantEditRecentChatsSummaryFrequencyDescription": "Refresh recent-chat summaries after the selected number of new messages.",
   "assistantEditRecentChatsSummaryFrequencyOption": "Every {count}",
   "@assistantEditRecentChatsSummaryFrequencyOption": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
+    "placeholders": { "count": { "type": "int" } }
   },
   "assistantEditRecentChatsSummaryFrequencyCustomButton": "Custom",
   "assistantEditRecentChatsSummaryFrequencyCustomTitle": "Custom Summary Frequency",
@@ -995,61 +835,45 @@
   "assistantEditRecentChatsSummaryFrequencyCustomHint": "Enter a number greater than 0",
   "assistantEditRecentChatsSummaryFrequencyCustomInvalid": "Please enter a whole number greater than 0",
   "defaultModelPageTranslateModelTitle": "Translation Model",
-  "defaultModelPageTranslateModelSubtitle": "Used for translating message content; prefer fast & accurate models",
+  "defaultModelPageTranslateModelSubtitle": "Translates message content",
   "defaultModelPageOcrModelTitle": "OCR Model",
-  "defaultModelPageOcrModelSubtitle": "Used for extracting text and descriptions from images",
+  "defaultModelPageOcrModelSubtitle": "Extracts text from images",
   "defaultModelPagePromptLabel": "Prompt",
   "defaultModelPageTitlePromptHint": "Enter prompt template for title summarization",
   "defaultModelPageSummaryPromptHint": "Enter prompt template for summary generation",
   "defaultModelPageTranslatePromptHint": "Enter prompt template for translation",
-  "defaultModelPageOcrPromptHint": "Enter prompt template for OCR image understanding",
+  "defaultModelPageOcrPromptHint": "Enter prompt template for OCR",
   "defaultModelPageResetDefault": "Reset to default",
   "defaultModelPageSave": "Save",
   "defaultModelPageTitleVars": "Vars: content: {contentVar}, locale: {localeVar}",
   "@defaultModelPageTitleVars": {
     "placeholders": {
-      "contentVar": {
-        "type": "String"
-      },
-      "localeVar": {
-        "type": "String"
-      }
+      "contentVar": { "type": "String" },
+      "localeVar": { "type": "String" }
     }
   },
   "defaultModelPageSummaryVars": "Variables: previous summary: {previousSummaryVar}, new messages: {userMessagesVar}",
   "@defaultModelPageSummaryVars": {
     "placeholders": {
-      "previousSummaryVar": {
-        "type": "String"
-      },
-      "userMessagesVar": {
-        "type": "String"
-      }
+      "previousSummaryVar": { "type": "String" },
+      "userMessagesVar": { "type": "String" }
     }
   },
   "defaultModelPageCompressModelTitle": "Compress Model",
-  "defaultModelPageCompressModelSubtitle": "Used for compressing conversation context; prefer fast models",
+  "defaultModelPageCompressModelSubtitle": "Used for compressing conversation context",
   "defaultModelPageCompressPromptHint": "Enter prompt template for context compression",
   "defaultModelPageCompressVars": "Variables: conversation: {contentVar}, language: {localeVar}",
   "@defaultModelPageCompressVars": {
     "placeholders": {
-      "contentVar": {
-        "type": "String"
-      },
-      "localeVar": {
-        "type": "String"
-      }
+      "contentVar": { "type": "String" },
+      "localeVar": { "type": "String" }
     }
   },
   "defaultModelPageTranslateVars": "Variables: source text: {sourceVar}, target language: {targetVar}",
   "@defaultModelPageTranslateVars": {
     "placeholders": {
-      "sourceVar": {
-        "type": "String"
-      },
-      "targetVar": {
-        "type": "String"
-      }
+      "sourceVar": { "type": "String" },
+      "targetVar": { "type": "String" }
     }
   },
   "defaultModelPageUseCurrentModel": "Use current chat model",
@@ -1067,11 +891,7 @@
   "modelDetailSheetModelIdHint": "Required, suggest lowercase/digits/hyphens",
   "modelDetailSheetModelIdDisabledHint": "{modelId}",
   "@modelDetailSheetModelIdDisabledHint": {
-    "placeholders": {
-      "modelId": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "modelId": { "type": "String" } }
   },
   "modelDetailSheetModelNameLabel": "Model Name",
   "modelDetailSheetModelTypeLabel": "Model Type",
@@ -1084,7 +904,7 @@
   "modelDetailSheetImageMode": "Image",
   "modelDetailSheetToolsAbility": "Tools",
   "modelDetailSheetReasoningAbility": "Reasoning",
-  "modelDetailSheetProviderOverrideDescription": "Provider overrides: customize provider for a specific model.",
+  "modelDetailSheetProviderOverrideDescription": "Provider overrides",
   "modelDetailSheetAddProviderOverride": "Add Provider Override",
   "modelDetailSheetCustomHeadersTitle": "Custom Headers",
   "modelDetailSheetAddHeader": "Add Header",
@@ -1101,10 +921,10 @@
   "modelDetailSheetCodeExecutionTool": "Code Execution",
   "modelDetailSheetCodeExecutionToolDescription": "Enable code execution tool",
   "modelDetailSheetYoutubeTool": "YouTube",
-  "modelDetailSheetYoutubeToolDescription": "Enable YouTube URL ingestion (auto-detect links in prompts)",
+  "modelDetailSheetYoutubeToolDescription": "Enable YouTube URL ingestion",
   "modelDetailSheetOpenaiBuiltinToolsResponsesOnlyHint": "Requires OpenAI Responses API.",
   "modelDetailSheetOpenaiCodeInterpreterTool": "Code Interpreter",
-  "modelDetailSheetOpenaiCodeInterpreterToolDescription": "Enable code interpreter tool (container auto, memory limit 4g)",
+  "modelDetailSheetOpenaiCodeInterpreterToolDescription": "Enable code interpreter tool",
   "modelDetailSheetOpenaiImageGenerationTool": "Image Generation",
   "modelDetailSheetOpenaiImageGenerationToolDescription": "Enable image generation tool",
   "modelDetailSheetCancelButton": "Cancel",
@@ -1196,7 +1016,7 @@
   "providerGroupsCreateDialogOk": "Create",
   "providerGroupsCreateFailedToast": "Failed to create group",
   "providerGroupsDeleteConfirmTitle": "Delete group?",
-  "providerGroupsDeleteConfirmContent": "Providers in this group will be moved to “Other”.",
+  "providerGroupsDeleteConfirmContent": "Providers in this group will be moved to \"Other\".",
   "providerGroupsDeleteConfirmCancel": "Cancel",
   "providerGroupsDeleteConfirmOk": "Delete",
   "providerGroupsDeletedToast": "Group deleted",
@@ -1225,21 +1045,13 @@
   "importProviderSheetFromGalleryTooltip": "From Gallery",
   "importProviderSheetImportSuccessMessage": "Imported {count} provider(s)",
   "@importProviderSheetImportSuccessMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
+    "placeholders": { "count": { "type": "int" } }
   },
   "importProviderSheetImportFailedMessage": "Import failed: {error}",
   "@importProviderSheetImportFailedMessage": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "error": { "type": "String" } }
   },
-  "importProviderSheetDescription": "Paste share strings (multi-line supported) or ChatBox JSON",
+  "importProviderSheetDescription": "Paste share strings or ChatBox JSON",
   "importProviderSheetInputHint": "ai-provider:v1:... or JSON",
   "importProviderSheetCancelButton": "Cancel",
   "importProviderSheetImportButton": "Import",
@@ -1314,7 +1126,7 @@
   "searchSettingsSheetBuiltinSearchTitle": "Built-in Search",
   "searchSettingsSheetBuiltinSearchDescription": "Enable model's built-in search",
   "searchSettingsSheetClaudeDynamicSearchTitle": "Built-in Search (New)",
-  "searchSettingsSheetClaudeDynamicSearchDescription": "Use `web_search_20260209` with dynamic filtering on supported official Claude models.",
+  "searchSettingsSheetClaudeDynamicSearchDescription": "Use `web_search_20260209` with dynamic filtering on supported Claude models.",
   "searchSettingsSheetWebSearchTitle": "Web Search",
   "searchSettingsSheetWebSearchDescription": "Enable web search in chat",
   "searchSettingsSheetOpenSearchServicesTooltip": "Open search services",
@@ -1328,12 +1140,8 @@
   "aboutPageVersionDetail": "{version} / {buildNumber}",
   "@aboutPageVersionDetail": {
     "placeholders": {
-      "version": {
-        "type": "String"
-      },
-      "buildNumber": {
-        "type": "String"
-      }
+      "version": { "type": "String" },
+      "buildNumber": { "type": "String" }
     }
   },
   "aboutPageSystem": "System",
@@ -1346,11 +1154,7 @@
   "aboutPagePlatformIos": "iOS",
   "aboutPagePlatformOther": "Other ({os})",
   "@aboutPagePlatformOther": {
-    "placeholders": {
-      "os": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "os": { "type": "String" } }
   },
   "aboutPageWebsite": "Website",
   "aboutPageGithub": "GitHub",
@@ -1370,7 +1174,7 @@
   "displaySettingsPageShowModelNameTitle": "Show Model Name",
   "displaySettingsPageShowModelTimestampTitle": "Show Model Timestamp",
   "displaySettingsPageShowProviderInChatMessageTitle": "Show Provider After Model Name",
-  "displaySettingsPageShowProviderInChatMessageSubtitle": "Display provider name after the model ID in chat messages (e.g. model | provider)",
+  "displaySettingsPageShowProviderInChatMessageSubtitle": "Display provider name after the model ID in chat messages",
   "displaySettingsPageChatModelIconTitle": "Chat Model Icon",
   "displaySettingsPageChatModelIconSubtitle": "Show model icon in chat messages",
   "displaySettingsPageShowTokenStatsTitle": "Show Token & Context Stats",
@@ -1383,9 +1187,7 @@
   "displaySettingsPageShowToolResultSummarySubtitle": "Display the summary text below tool steps",
   "chainOfThoughtExpandSteps": "Show {count} more steps",
   "@chainOfThoughtExpandSteps": {
-    "placeholders": {
-      "count": {}
-    }
+    "placeholders": { "count": {} }
   },
   "chainOfThoughtCollapse": "Collapse",
   "displaySettingsPageShowChatListDateTitle": "Show Chat List Dates",
@@ -1459,11 +1261,7 @@
   "ttsServicesPageSystemTtsAvailableSubtitle": "Use system built-in TTS",
   "ttsServicesPageSystemTtsUnavailableSubtitle": "Unavailable: {error}",
   "@ttsServicesPageSystemTtsUnavailableSubtitle": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "error": { "type": "String" } }
   },
   "ttsServicesPageSystemTtsUnavailableNotInitialized": "not initialized",
   "ttsServicesPageTestSpeechText": "Hello, this is a test speech.",
@@ -1500,43 +1298,31 @@
   "ttsServicesCloseButton": "Close",
   "imageViewerPageShareFailedOpenFile": "Unable to share, tried to open file: {message}",
   "@imageViewerPageShareFailedOpenFile": {
-    "placeholders": {
-      "message": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "message": { "type": "String" } }
   },
   "imageViewerPageShareFailed": "Share failed: {error}",
   "@imageViewerPageShareFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "error": { "type": "String" } }
   },
   "imageViewerPageShareButton": "Share Image",
   "imageViewerPageSaveButton": "Save Image",
   "imageViewerPageSaveSuccess": "Saved to gallery",
   "imageViewerPageSaveFailed": "Save failed: {error}",
   "@imageViewerPageSaveFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "error": { "type": "String" } }
   },
   "settingsShare": "Kelivo - Open Source AI Assistant",
-  "searchProviderBingLocalDescription": "Uses web scraping to fetch Bing results. No API key required; may be unstable.",
-  "searchProviderDuckDuckGoDescription": "Privacy-focused DuckDuckGo search via DDGS. No API key required; supports region selection.",
-  "searchProviderBraveDescription": "Independent search engine by Brave. Privacy-focused with no tracking or profiling.",
-  "searchProviderExaDescription": "Neural search with semantic understanding. Great for research and finding specific content.",
-  "searchProviderLinkUpDescription": "Search API with sourced answers. Provides both results and AI-generated summaries.",
-  "searchProviderMetasoDescription": "Chinese search by Metaso. Optimized for Chinese content with AI capabilities.",
-  "searchProviderSearXNGDescription": "Privacy-respecting metasearch engine. Self-hosted instance required; no tracking.",
-  "searchProviderTavilyDescription": "AI search API optimized for LLMs. Provides high-quality, relevant results.",
-  "searchProviderZhipuDescription": "Chinese AI search by Zhipu AI. Optimized for Chinese content and queries.",
-  "searchProviderOllamaDescription": "Ollama web search API. Augments models with up-to-date information.",
-  "searchProviderJinaDescription": "AI search foundation with embeddings, rerankers, web reader, deepsearch, and small language models. Multilingual and multimodal.",
+  "searchProviderBingLocalDescription": "Uses web scraping to fetch Bing results.",
+  "searchProviderDuckDuckGoDescription": "Privacy-focused DuckDuckGo search via DDGS.",
+  "searchProviderBraveDescription": "Independent search engine by Brave.",
+  "searchProviderExaDescription": "Neural search with semantic understanding.",
+  "searchProviderLinkUpDescription": "Search API with sourced answers.",
+  "searchProviderMetasoDescription": "Chinese search by Metaso.",
+  "searchProviderSearXNGDescription": "Privacy-respecting metasearch engine.",
+  "searchProviderTavilyDescription": "AI search API optimized for LLMs.",
+  "searchProviderZhipuDescription": "Chinese AI search by Zhipu AI.",
+  "searchProviderOllamaDescription": "Ollama web search API.",
+  "searchProviderJinaDescription": "AI search foundation.",
   "searchServiceNameBingLocal": "Bing (Local)",
   "searchServiceNameDuckDuckGo": "DuckDuckGo",
   "searchServiceNameTavily": "Tavily",
@@ -1549,9 +1335,9 @@
   "searchServiceNameOllama": "Ollama",
   "searchServiceNameJina": "Jina",
   "searchServiceNamePerplexity": "Perplexity",
-  "searchProviderPerplexityDescription": "Perplexity Search API. Ranked web results with region and domain filters.",
+  "searchProviderPerplexityDescription": "Perplexity Search API.",
   "searchServiceNameBocha": "Bocha",
-  "searchProviderBochaDescription": "Bocha web search API. Accurate web results with optional summaries.",
+  "searchProviderBochaDescription": "Bocha web search API.",
   "generationInterrupted": "Generation interrupted",
   "titleForLocale": "New Chat",
   "quickPhraseBackTooltip": "Back",
@@ -1580,11 +1366,7 @@
   "instructionInjectionGroupHint": "Optional",
   "instructionInjectionImportSuccess": "Imported {count} instruction(s)",
   "@instructionInjectionImportSuccess": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
+    "placeholders": { "count": { "type": "int" } }
   },
   "instructionInjectionSheetSubtitle": "Choose a prompt to apply before chatting",
   "mcpJsonEditButtonTooltip": "Edit JSON",
@@ -1599,7 +1381,7 @@
   "quickPhraseDeleteButton": "Delete",
   "quickPhraseMenuTitle": "Quick Phrase",
   "chatInputBarQuickPhraseTooltip": "Quick Phrase",
-  "assistantEditQuickPhraseDescription": "Manage quick phrases for this assistant. Click the button below to add phrases.",
+  "assistantEditQuickPhraseDescription": "Manage quick phrases for this assistant.",
   "assistantEditManageQuickPhraseButton": "Manage Quick Phrases",
   "assistantEditPageMemoryTab": "Memory",
   "assistantEditMemorySwitchTitle": "Memory",
@@ -1620,11 +1402,7 @@
   "multiKeyPageDeleteErrorsConfirmContent": "This will remove all keys marked as error.",
   "multiKeyPageDeletedErrorsSnackbar": "Deleted {n} error keys",
   "@multiKeyPageDeletedErrorsSnackbar": {
-    "placeholders": {
-      "n": {
-        "type": "int"
-      }
-    }
+    "placeholders": { "n": { "type": "int" } }
   },
   "providerDetailPageProviderTypeTitle": "Provider Type",
   "displaySettingsPageChatItemDisplayTitle": "Chat item display",
@@ -1632,15 +1410,12 @@
   "displaySettingsPageBehaviorStartupTitle": "Behavior & startup",
   "displaySettingsPageHapticsSettingsTitle": "Haptics",
   "assistantSettingsNoPromptPlaceholder": "No prompt yet",
-  "providersPageMultiSelectTooltip": "Multi-select"
-  ,
+  "providersPageMultiSelectTooltip": "Multi-select",
   "providersPageDeleteSelectedConfirmContent": "Delete selected providers? This cannot be undone.",
   "providersPageDeleteSelectedSnackbar": "Deleted selected providers",
   "providersPageExportSelectedTitle": "Export {count} providers",
   "@providersPageExportSelectedTitle": {
-    "placeholders": {
-      "count": {"type": "int"}
-    }
+    "placeholders": { "count": { "type": "int" } }
   },
   "providersPageExportCopyButton": "Copy",
   "providersPageExportShareButton": "Share",
@@ -1669,7 +1444,7 @@
   "networkProxyUsername": "Username",
   "networkProxyPassword": "Password",
   "networkProxyBypassLabel": "Proxy bypass",
-  "networkProxyBypassHint": "Comma-separated hosts/CIDR, e.g. localhost,127.0.0.1,192.168.0.0/16,*.local",
+  "networkProxyBypassHint": "Comma-separated hosts/CIDR",
   "networkProxyOptionalHint": "Optional",
   "networkProxyTestHeader": "Connection Test",
   "networkProxyTestUrlHint": "Test URL",
@@ -1678,9 +1453,7 @@
   "networkProxyTestSuccess": "Connection successful",
   "networkProxyTestFailed": "Test failed: {error}",
   "@networkProxyTestFailed": {
-    "placeholders": {
-      "error": { "type": "String" }
-    }
+    "placeholders": { "error": { "type": "String" } }
   },
   "networkProxyNoUrl": "Please enter a URL",
   "networkProxyPriorityNote": "When both global and provider proxies are enabled, provider-level proxy takes priority.",
@@ -1699,9 +1472,9 @@
   "providerDetailPageDeleteAllModelsWarning": "This action cannot be undone.",
   "displaySettingsPageOtherSettingsTitle": "Other Settings",
   "requestLogSettingTitle": "Request Logging",
-  "requestLogSettingSubtitle": "When enabled, request/response details are written to logs/logs.txt (rotated daily).",
+  "requestLogSettingSubtitle": "Request/response details are written to logs/logs.txt",
   "flutterLogSettingTitle": "Flutter Logging",
-  "flutterLogSettingSubtitle": "When enabled, Flutter errors and print output are written to logs/flutter_logs.txt (rotated daily).",
+  "flutterLogSettingSubtitle": "Flutter errors and print output are written to logs/flutter_logs.txt",
   "logViewerTitle": "Request Logs",
   "logViewerEmpty": "No logs yet",
   "logViewerCurrentLog": "Current Log",
@@ -1709,11 +1482,7 @@
   "logViewerOpenFolder": "Open Logs Folder",
   "logViewerRequestsCount": "{count} requests",
   "@logViewerRequestsCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
+    "placeholders": { "count": { "type": "int" } }
   },
   "logViewerFieldId": "ID",
   "logViewerFieldMethod": "Method",
@@ -1731,25 +1500,17 @@
   "logViewerErrorTitle": "Error",
   "logViewerMoreCount": "+{count} more",
   "@logViewerMoreCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
+    "placeholders": { "count": { "type": "int" } }
   },
   "logSettingsTitle": "Log Settings",
   "logSettingsSaveOutput": "Save Response Output",
-  "logSettingsSaveOutputSubtitle": "Log response body content (may use significant storage)",
+  "logSettingsSaveOutputSubtitle": "Log response body content",
   "logSettingsAutoDelete": "Auto-delete",
   "logSettingsAutoDeleteSubtitle": "Delete logs older than specified days",
   "logSettingsAutoDeleteDisabled": "Disabled",
   "logSettingsAutoDeleteDays": "{count} days",
   "@logSettingsAutoDeleteDays": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
+    "placeholders": { "count": { "type": "int" } }
   },
   "logSettingsMaxSize": "Max Log Size",
   "logSettingsMaxSizeSubtitle": "Oldest logs deleted when exceeded",
@@ -1764,11 +1525,7 @@
   "fileUploadDuplicateTitle": "File already exists",
   "fileUploadDuplicateContent": "A file named {fileName} already exists. Use the existing file?",
   "@fileUploadDuplicateContent": {
-    "placeholders": {
-      "fileName": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "fileName": { "type": "String" } }
   },
   "fileUploadDuplicateUseExisting": "Use existing",
   "fileUploadDuplicateUploadNew": "Upload new",
@@ -1783,33 +1540,21 @@
   "worldBookExport": "Share / Export",
   "worldBookConfig": "Configure",
   "worldBookDeleteTitle": "Delete World Book",
-  "worldBookDeleteMessage": "Delete “{name}”? This cannot be undone.",
+  "worldBookDeleteMessage": "Delete \"{name}\"? This cannot be undone.",
   "@worldBookDeleteMessage": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "name": { "type": "String" } }
   },
   "worldBookCancel": "Cancel",
   "worldBookDelete": "Delete",
   "worldBookExportFailed": "Export failed: {error}",
   "@worldBookExportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "error": { "type": "String" } }
   },
   "worldBookNoEntriesHint": "No entries",
   "worldBookUnnamedEntry": "Unnamed Entry",
   "worldBookKeywordsLine": "Keywords: {keywords}",
   "@worldBookKeywordsLine": {
-    "placeholders": {
-      "keywords": {
-        "type": "String"
-      }
-    }
+    "placeholders": { "keywords": { "type": "String" } }
   },
   "worldBookEditEntry": "Edit Entry",
   "worldBookDeleteEntry": "Delete Entry",
@@ -1846,42 +1591,44 @@
   "toolApprovalDeny": "Deny",
   "toolApprovalDenyTitle": "Deny tool call",
   "toolApprovalDenyHint": "Reason (optional)",
-  "toolApprovalDeniedMessage": "Tool call \"{toolName}\" was denied by user. Reason: {reason}",
+  "toolApprovalDeniedMessage": "Tool call \"{toolName}\" was denied by user.",
   "tokenDetailPromptTokens": "{count} tokens",
   "@tokenDetailPromptTokens": {
-    "placeholders": {
-      "count": {"type": "int"}
-    }
+    "placeholders": { "count": { "type": "int" } }
   },
   "tokenDetailPromptTokensWithCache": "{count} tokens ({cached} cached)",
   "@tokenDetailPromptTokensWithCache": {
     "placeholders": {
-      "count": {"type": "int"},
-      "cached": {"type": "int"}
+      "count": { "type": "int" },
+      "cached": { "type": "int" }
     }
   },
   "tokenDetailCompletionTokens": "{count} tokens",
   "@tokenDetailCompletionTokens": {
-    "placeholders": {
-      "count": {"type": "int"}
-    }
+    "placeholders": { "count": { "type": "int" } }
   },
   "tokenDetailSpeed": "{value} tok/s",
   "@tokenDetailSpeed": {
-    "placeholders": {
-      "value": {"type": "String"}
-    }
+    "placeholders": { "value": { "type": "String" } }
   },
   "tokenDetailDuration": "{value}s",
   "@tokenDetailDuration": {
-    "placeholders": {
-      "value": {"type": "String"}
-    }
+    "placeholders": { "value": { "type": "String" } }
   },
   "tokenDetailTotalTokens": "{count} tokens",
   "@tokenDetailTotalTokens": {
-    "placeholders": {
-      "count": {"type": "int"}
-    }
-  }
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "promptQueueTitle": "Queue",
+  "promptQueueTitleWithCount": "Queue ({count})",
+  "@promptQueueTitleWithCount": {
+    "placeholders": { "count": { "type": "String" } }
+  },
+  "promptQueueEmpty": "Your queue is empty",
+  "promptQueueClearAll": "Clear All",
+  "promptQueueAutoProcess": "Auto-process next",
+  "promptQueueEditPrompt": "Edit prompt",
+  "promptQueueDeletePrompt": "Remove",
+  "promptQueueDeleteConfirm": "Clear all queued messages?",
+  "promptQueueSaved": "Queued"
 }
