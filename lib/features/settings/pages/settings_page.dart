@@ -147,7 +147,7 @@ class SettingsPage extends StatelessWidget {
               ),
             ),
 
-          // 通用设置：使用iOS风格分组卡片，黑色（中性）图标与标题，无描述
+          // General settings section
           header(l10n.settingsPageGeneralSection, first: true),
           _iosSectionCard(
             children: [
@@ -326,7 +326,7 @@ class SettingsPage extends StatelessWidget {
               _iosNavRow(
                 context,
                 icon: Lucide.Cloud,
-                label: l10n.settingsPageBackupSubtitle, // Will show "Thread Backup" subtitle as label
+                label: l10n.settingsPageSupabaseSync,
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const SupabaseConfigPage()),
@@ -362,7 +362,8 @@ class SettingsPage extends StatelessWidget {
                   }
                 },
               ),
-              if (settings.requestLogEnabled || settings.flutterLogEnabled) ...[n                _iosDivider(context),
+              if (settings.requestLogEnabled || settings.flutterLogEnabled) ...[
+                _iosDivider(context),
                 _iosNavRow(
                   context,
                   icon: Lucide.FileText,
@@ -403,7 +404,6 @@ Widget _iosSectionCard({required List<Widget> children}) {
       final theme = Theme.of(context);
       final cs = theme.colorScheme;
       final isDark = theme.brightness == Brightness.dark;
-      // Light: white with slight transparency; Dark: subtle translucent dark
       final Color bg = isDark
           ? Colors.white10
           : Colors.white.withValues(alpha: 0.96);
@@ -428,7 +428,6 @@ Widget _iosSectionCard({required List<Widget> children}) {
 
 Widget _iosDivider(BuildContext context) {
   final cs = Theme.of(context).colorScheme;
-  // Restore previous visual: align with icon slot (36) + gap (12) + padding (12)
   return Divider(
     height: 6,
     thickness: 0.6,
@@ -438,7 +437,6 @@ Widget _iosDivider(BuildContext context) {
   );
 }
 
-// Shared color tween wrapper to mimic iOS gentle press color transition
 class _AnimatedPressColor extends StatelessWidget {
   const _AnimatedPressColor({
     required this.pressed,
@@ -625,7 +623,6 @@ class _TactileRowState extends State<_TactileRow> {
   }
 }
 
-// Icon-only tactile button for AppBar: no ripple, slight press scale
 class _TactileIconButton extends StatefulWidget {
   const _TactileIconButton({
     required this.icon,
@@ -676,7 +673,6 @@ class _TactileIconButtonState extends State<_TactileIconButton> {
   }
 }
 
-// Bottom sheet iOS-style option with tactile feedback (no ripple)
 Widget _sheetOption(
   BuildContext context, {
   required IconData icon,
