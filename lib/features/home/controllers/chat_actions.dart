@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/models/chat_input_data.dart';
 import '../../../core/models/chat_message.dart';
 import '../../../core/models/conversation.dart';
+import '../../../core/models/model_pricing.dart';
 import '../../../core/models/token_usage.dart';
 import '../../../core/providers/assistant_provider.dart';
 import '../../../core/providers/settings_provider.dart';
@@ -1076,13 +1077,22 @@ class ChatActions {
     // Replace extremely long inline base64 images with local files to avoid jank
     final processedContent = _transformAssistantContent(state);
 
-    // Compute final duration
+    // Compute final duration and token counts
     final finalDurationMs = state.streamStartedAt != null
         ? DateTime.now().difference(state.streamStartedAt!).inMilliseconds
         : null;
     final finalPromptTokens = state.usage?.promptTokens;
     final finalCompletionTokens = state.usage?.completionTokens;
     final finalCachedTokens = state.usage?.cachedTokens;
+
+    // Calculate cost using the model pricing registry
+    final costUsd = CostCalculator.calculateCost(
+      providerKey: state.ctx.providerKey,
+      modelId: state.ctx.modelId,
+      promptTokens: finalPromptTokens ?? 0,
+      completionTokens: finalCompletionTokens ?? 0,
+      cachedTokens: finalCachedTokens ?? 0,
+    );
 
     // Flush final content to the streaming notifier before async operations.
     // This ensures any intermediate rebuild (e.g., from isProcessingFiles change
@@ -1099,6 +1109,7 @@ class ChatActions {
       completionTokens: finalCompletionTokens,
       cachedTokens: finalCachedTokens,
       durationMs: finalDurationMs,
+      costUsd: costUsd,
     );
 
     final sanitizedContent =
@@ -1114,6 +1125,7 @@ class ChatActions {
       completionTokens: finalCompletionTokens,
       cachedTokens: finalCachedTokens,
       durationMs: finalDurationMs,
+      costUsd: costUsd,
     );
 
     final index = _messages.indexWhere((m) => m.id == messageId);
@@ -1126,6 +1138,7 @@ class ChatActions {
         completionTokens: finalCompletionTokens,
         cachedTokens: finalCachedTokens,
         durationMs: finalDurationMs,
+        costUsd: costUsd,
       );
       onMessagesChanged?.call();
     }
