@@ -4,6 +4,7 @@ import '../../../core/models/assistant.dart';
 import '../../../core/models/chat_message.dart';
 import '../../../core/providers/model_provider.dart';
 import '../../../core/providers/settings_provider.dart';
+import '../../../core/services/chat/chat_orchestrator_service.dart';
 import '../../../core/services/chat/chat_service.dart';
 import '../../../utils/assistant_regex.dart';
 import '../../../core/models/assistant_regex.dart';
@@ -13,14 +14,6 @@ import '../services/tool_approval_service.dart';
 import 'chat_controller.dart';
 import 'stream_controller.dart' as stream_ctrl;
 
-/// Controller for coordinating message generation (send and regenerate).
-///
-/// This controller:
-/// - Coordinates message sending and regeneration flows
-/// - Uses MessageBuilderService to construct API messages
-/// - Uses StreamController to handle streaming responses
-/// - Uses ToolHandlerService to manage tool definitions and handlers
-/// - Manages generation state (loading, streaming)
 class GenerationController {
   GenerationController({
     required this.chatService,
@@ -30,43 +23,27 @@ class GenerationController {
     required this.contextProvider,
     required this.onStateChanged,
     required this.getTitleForLocale,
+    required ChatOrchestratorService chatOrchestratorService,
   }) : toolHandlerService = ToolHandlerService(
          contextProvider: contextProvider,
+         chatOrchestratorService: chatOrchestratorService,
        );
 
   final ChatService chatService;
   final ChatController chatController;
   final stream_ctrl.StreamController streamController;
   final MessageBuilderService messageBuilderService;
-
-  /// Service for handling tool definitions and tool call execution
   final ToolHandlerService toolHandlerService;
-
-  /// Build context (used for accessing providers)
   final BuildContext contextProvider;
-
-  /// Callback when state changes (trigger setState in the widget)
   final VoidCallback onStateChanged;
-
-  /// Function to get localized title
   final String Function(BuildContext context) getTitleForLocale;
 
-  // ============================================================================
-  // Tool Schema Sanitization (delegated to ToolHandlerService)
-  // ============================================================================
-
-  /// Sanitize/translate JSON Schema to each provider's accepted subset.
-  /// Delegates to ToolHandlerService.sanitizeToolParametersForProvider.
   static Map<String, dynamic> sanitizeToolParametersForProvider(
     Map<String, dynamic> schema,
     ProviderKind kind,
   ) {
     return ToolHandlerService.sanitizeToolParametersForProvider(schema, kind);
   }
-
-  // ============================================================================
-  // Model Capability Checks
-  // ============================================================================
 
   bool isReasoningModel(String providerKey, String modelId) {
     final settings = contextProvider.read<SettingsProvider>();
@@ -107,17 +84,11 @@ class GenerationController {
   }
 
   bool isReasoningEnabled(int? budget) {
-    if (budget == null) return true; // treat null as default/auto -> enabled
-    if (budget == -1) return true; // auto
+    if (budget == null) return true;
+    if (budget == -1) return true;
     return budget >= 1024;
   }
 
-  // ============================================================================
-  // Tool Definitions Builder (delegated to ToolHandlerService)
-  // ============================================================================
-
-  /// Prepare tool definitions for API call.
-  /// Delegates to ToolHandlerService.buildToolDefinitions.
   List<Map<String, dynamic>> buildToolDefinitions(
     SettingsProvider settings,
     Assistant? assistant,
@@ -135,8 +106,6 @@ class GenerationController {
     );
   }
 
-  /// Build tool call handler function.
-  /// Delegates to ToolHandlerService.buildToolCallHandler.
   Future<String> Function(String, Map<String, dynamic>)? buildToolCallHandler(
     SettingsProvider settings,
     Assistant? assistant, {
@@ -149,11 +118,6 @@ class GenerationController {
     );
   }
 
-  // ============================================================================
-  // Custom Headers/Body Builders
-  // ============================================================================
-
-  /// Build custom headers from assistant settings.
   Map<String, String>? buildCustomHeaders(Assistant? assistant) {
     if ((assistant?.customHeaders.isNotEmpty ?? false)) {
       final headers = <String, String>{
@@ -166,7 +130,6 @@ class GenerationController {
     return null;
   }
 
-  /// Build custom body from assistant settings.
   Map<String, dynamic>? buildCustomBody(Assistant? assistant) {
     if ((assistant?.customBody.isNotEmpty ?? false)) {
       final body = <String, dynamic>{
@@ -179,11 +142,6 @@ class GenerationController {
     return null;
   }
 
-  // ============================================================================
-  // Assistant Content Transform
-  // ============================================================================
-
-  /// Transform raw content using assistant regexes.
   String transformAssistantContent(String raw, Assistant? assistant) {
     return applyAssistantRegexes(
       raw,
@@ -193,11 +151,6 @@ class GenerationController {
     );
   }
 
-  // ============================================================================
-  // Generation Context Builder
-  // ============================================================================
-
-  /// Build generation context with all necessary data for streaming.
   stream_ctrl.GenerationContext buildGenerationContext({
     required ChatMessage assistantMessage,
     required List<Map<String, dynamic>> apiMessages,

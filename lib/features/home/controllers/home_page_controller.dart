@@ -16,6 +16,7 @@ import '../../../core/providers/quick_phrase_provider.dart';
 import '../../../core/providers/instruction_injection_provider.dart';
 import '../../../core/providers/memory_provider.dart';
 import '../../../core/services/chat/chat_service.dart';
+import '../../../core/services/chat/chat_orchestrator_service.dart';
 import '../../../core/services/haptics.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/widgets/snackbar.dart';
@@ -41,23 +42,10 @@ import '../services/file_upload_service.dart';
 import '../widgets/chat_input_bar.dart';
 import '../../model/widgets/model_select_sheet.dart';
 
-/// Translation data for UI state (expanded/collapsed).
 class TranslationData {
-  bool expanded = true; // default to expanded when translation is added
+  bool expanded = true;
 }
 
-/// Controller that manages all state and service wiring for HomePage.
-///
-/// This controller extracts the non-UI logic from _HomePageState to:
-/// - Centralize state management
-/// - Make the code more testable
-/// - Allow reuse across different page layouts (mobile/tablet/desktop)
-/// - Reduce the complexity of the State class
-///
-/// The HomePage widget now only manages:
-/// - Lifecycle (initState, dispose)
-/// - Layout selection (mobile vs tablet)
-/// - Building the UI tree
 class HomePageController extends ChangeNotifier {
   HomePageController({
     required BuildContext context,
@@ -79,10 +67,6 @@ class HomePageController extends ChangeNotifier {
     _initialize();
   }
 
-  // ============================================================================
-  // Dependencies (injected)
-  // ============================================================================
-
   final BuildContext _context;
   final TickerProvider _vsync;
   final GlobalKey<ScaffoldState> _scaffoldKey;
@@ -91,10 +75,6 @@ class HomePageController extends ChangeNotifier {
   final TextEditingController _inputController;
   final ChatInputBarController _mediaController;
   final ScrollController _scrollController;
-
-  // ============================================================================
-  // Services & Controllers (created internally)
-  // ============================================================================
 
   late ChatService _chatService;
   late ChatController _chatController;
@@ -107,70 +87,39 @@ class HomePageController extends ChangeNotifier {
   late TranslationService _translationService;
   late FileUploadService _fileUploadService;
   late scroll_ctrl.ChatScrollController _scrollCtrl;
+  late ChatOrchestratorService _orchestratorService;
 
   McpProvider? _mcpProvider;
   StreamSubscription<ChatAction>? _chatActionSub;
-
-  // ============================================================================
-  // Animation Controllers
-  // ============================================================================
 
   late AnimationController _convoFadeController;
   late Animation<double> _convoFade;
   bool _chatControllerReady = false;
 
-  // ============================================================================
-  // State Fields
-  // ============================================================================
-
-  // Translations UI state
   final Map<String, TranslationData> _translations =
       <String, TranslationData>{};
 
-  // Note: GlobalKey-based message navigation removed; using ListObserverController instead.
-
-  // Selection mode
   bool _selecting = false;
   final Set<String> _selectedItems = <String>{};
   bool _showThinkingTools = false;
   bool _showThinkingContent = false;
-
-  // Desktop drag-and-drop
   bool _isDragHovering = false;
-
-  // App lifecycle (currently unused but kept for future notification logic)
-  // ignore: unused_field
   bool _appInForeground = true;
-
-  // Sidebar state (tablet/desktop)
   bool _tabletSidebarOpen = true;
   bool _rightSidebarOpen = true;
   double _embeddedSidebarWidth = 300;
   double _rightSidebarWidth = 300;
   bool _desktopUiInited = false;
-
-  // Drawer state
   double _lastDrawerValue = 0.0;
-
-  // Desktop global-search mode
   bool _isGlobalSearchMode = false;
   String _globalSearchQuery = '';
-
-  // Message-level spotlight target after selecting a global search result
   String? _spotlightMessageId;
   int _spotlightToken = 0;
-
-  // Input bar measurement
   double _inputBarHeight = 72;
 
-  // Animation tuning
   static const Duration _postSwitchScrollDelay = Duration(milliseconds: 220);
   static const double _sidebarMinWidth = 200;
   static const double _sidebarMaxWidth = 360;
-
-  // ============================================================================
-  // Getters - State Access
-  // ============================================================================
 
   GlobalKey<ScaffoldState> get scaffoldKey => _scaffoldKey;
   GlobalKey get inputBarKey => _inputBarKey;
@@ -199,11 +148,11 @@ class HomePageController extends ChangeNotifier {
   String get globalSearchQuery => _globalSearchQuery;
   String? get spotlightMessageId => _spotlightMessageId;
   int get spotlightToken => _spotlightToken;
+  ChatOrchestratorService get orchestratorService => _orchestratorService;
 
   static double get sidebarMinWidth => _sidebarMinWidth;
   static double get sidebarMaxWidth => _sidebarMaxWidth;
 
-  // Delegate to ChatController
   Conversation? get currentConversation => _chatController.currentConversation;
   List<ChatMessage> get messages => _chatController.messages;
   Map<String, int> get versionSelections => _chatController.versionSelections;
@@ -212,7 +161,6 @@ class HomePageController extends ChangeNotifier {
   Map<String, StreamSubscription<dynamic>> get conversationStreams =>
       _chatController.conversationStreams;
 
-  // Delegate to StreamController
   Map<String, stream_ctrl.ReasoningData> get reasoning =>
       _streamController.reasoning;
   Map<String, List<stream_ctrl.ReasoningSegmentData>> get reasoningSegments =>
@@ -221,12 +169,9 @@ class HomePageController extends ChangeNotifier {
       _streamController.contentSplits;
   Map<String, List<ToolUIPart>> get toolParts => _streamController.toolParts;
 
-  /// Lightweight notifier for streaming content updates.
-  /// Use this with ValueListenableBuilder in MessageListView to avoid full page rebuilds.
   stream_ctrl.StreamingContentNotifier get streamingContentNotifier =>
       _streamController.streamingContentNotifier;
 
-  // Delegate to scroll controller
   scroll_ctrl.ChatScrollController get scrollCtrl => _scrollCtrl;
 
   bool get isDesktopPlatform => PlatformUtils.isDesktopTarget;
@@ -248,10 +193,6 @@ class HomePageController extends ChangeNotifier {
     }
     super.notifyListeners();
   }
-
-  // ============================================================================
-  // Initialization
-  // ============================================================================
 
   void _initialize() {
     _initializeAnimations();
@@ -309,6 +250,14 @@ class HomePageController extends ChangeNotifier {
       geminiThoughtSignatureHandler: _appendGeminiThoughtSignatureForApi,
     );
     _messageBuilderService.ocrTextWrapper = _ocrService.wrapOcrBlock;
+
+    // Create orchestrator service
+    _orchestratorService = ChatOrchestratorService(
+      chatService: _chatService,
+      contextProvider: _context,
+      messageBuilderService: _messageBuilderService,
+    );
+
     _generationController = GenerationController(
       chatService: _chatService,
       chatController: _chatController,
@@ -317,6 +266,7 @@ class HomePageController extends ChangeNotifier {
       contextProvider: _context,
       onStateChanged: () => notifyListeners(),
       getTitleForLocale: _titleForLocale,
+      chatOrchestratorService: _orchestratorService,
     );
     _messageGenerationService = MessageGenerationService(
       chatService: _chatService,
@@ -337,6 +287,7 @@ class HomePageController extends ChangeNotifier {
       chatController: _chatController,
       contextProvider: _context,
       getTitleForLocale: _titleForLocale,
+      chatOrchestratorService: _orchestratorService,
     );
     _viewModel.addListener(notifyListeners);
   }
@@ -380,7 +331,6 @@ class HomePageController extends ChangeNotifier {
       _scrollToBottom(animate: false);
     };
     _viewModel.onStreamFinished = () {
-      // Trigger UI update when streaming finishes
       notifyListeners();
     };
   }
@@ -516,8 +466,6 @@ class HomePageController extends ChangeNotifier {
     required String messageId,
   }) async {
     await switchConversationAnimated(conversationId);
-    // Wait one extra frame so the new conversation's message widgets have
-    // had a chance to build for the observer controller.
     try {
       await WidgetsBinding.instance.endOfFrame;
     } catch (_) {}
@@ -707,12 +655,9 @@ class HomePageController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Compress context: summarize via LLM, create new conversation.
-  /// Returns null on success, or an error string on failure.
   Future<String?> compressContext() async {
     final result = await _viewModel.compressContext();
     if (result == null) {
-      // Success - switched to new conversation
       _translations.clear();
       notifyListeners();
       _scrollToBottomSoon(animate: false);
@@ -818,8 +763,6 @@ class HomePageController extends ChangeNotifier {
         if (index != -1) {
           messages[index] = loadingMessage;
         }
-        // Messages are mutated externally; invalidate ChatController caches so
-        // collapsed/grouped views reflect updates immediately.
         _chatController.invalidateCache();
         _translations[message.id] = TranslationData();
         notifyListeners();
@@ -1158,14 +1101,10 @@ class HomePageController extends ChangeNotifier {
     final r = reasoning[messageId];
     if (r != null) {
       r.expanded = !r.expanded;
-      // Check if reasoning is still loading (finishedAt == null means streaming)
-      // This is O(1) - no list traversal needed
       final isStillStreaming = r.finishedAt == null && r.text.isNotEmpty;
       if (isStillStreaming && streamingContentNotifier.hasNotifier(messageId)) {
-        // For actively streaming messages, use lightweight notifier update
         streamingContentNotifier.forceRebuild(messageId);
       } else {
-        // For non-streaming messages, trigger full page rebuild
         notifyListeners();
       }
     }
@@ -1184,14 +1123,10 @@ class HomePageController extends ChangeNotifier {
     if (segments != null && segmentIndex < segments.length) {
       final seg = segments[segmentIndex];
       seg.expanded = !seg.expanded;
-      // Check if this segment is still loading (finishedAt == null means streaming)
-      // This is O(1) - no list traversal needed
       final isStillStreaming = seg.finishedAt == null && seg.text.isNotEmpty;
       if (isStillStreaming && streamingContentNotifier.hasNotifier(messageId)) {
-        // For actively streaming messages, use lightweight notifier update
         streamingContentNotifier.forceRebuild(messageId);
       } else {
-        // For non-streaming messages, trigger full page rebuild
         notifyListeners();
       }
     }
@@ -1334,10 +1269,10 @@ class HomePageController extends ChangeNotifier {
         : text.length;
     final end =
         (selection.end >= 0 &&
-            selection.end <= text.length &&
-            selection.end >= start)
-        ? selection.end
-        : start;
+                selection.end <= text.length &&
+                selection.end >= start)
+            ? selection.end
+            : start;
 
     final newText = text.replaceRange(start, end, selected.content);
     _inputController.value = _inputController.value.copyWith(
@@ -1446,7 +1381,6 @@ class HomePageController extends ChangeNotifier {
     return true;
   }
 
-  /// Transform raw content using assistant regexes.
   String transformAssistantContent(
     stream_ctrl.StreamingState state, [
     String? raw,
@@ -1494,8 +1428,6 @@ class HomePageController extends ChangeNotifier {
       _scrollCtrl.scrollToBottom(animate: animate);
   void _scrollToBottomSoon({bool animate = true}) =>
       _scrollCtrl.scrollToBottomSoon(animate: animate);
-
-  // _getViewportBounds removed: ListObserverController handles visibility.
 
   void _restoreMessageUiState() {
     for (int i = 0; i < messages.length; i++) {
@@ -1575,9 +1507,7 @@ class HomePageController extends ChangeNotifier {
     );
   }
 
-  Future<void> _onMcpChanged() async {
-    // Kept for potential future use
-  }
+  Future<void> _onMcpChanged() async {}
 
   // ============================================================================
   // Disposal
