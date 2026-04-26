@@ -593,7 +593,7 @@ class _AboutPageState extends State<AboutPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Kelivo',
+                            'Kelizo',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -626,7 +626,7 @@ class _AboutPageState extends State<AboutPage> {
           // iOS-style list card
           _iosSectionCard(
             children: [
-              // Version (tap 7x to unlock easter egg) — logic unchanged
+              // Version (tap 7x to unlock easter egg)
               _iosNavRow(
                 context,
                 icon: Lucide.Code,
@@ -651,7 +651,7 @@ class _AboutPageState extends State<AboutPage> {
                 icon: Lucide.Earth,
                 label: l10n.aboutPageWebsite,
                 onTap: () async {
-                  final uri = Uri.parse('https://kelivo.psycheas.top/');
+                  final uri = Uri.parse('https://github.com/zhilsinger/kelivo');
                   if (!await launchUrl(uri, mode: LaunchMode.platformDefault)) {
                     await launchUrl(uri, mode: LaunchMode.externalApplication);
                   }
@@ -662,7 +662,7 @@ class _AboutPageState extends State<AboutPage> {
                 context,
                 svgAsset: 'assets/icons/github.svg',
                 label: l10n.aboutPageGithub,
-                onTap: () => _openUrl('https://github.com/Chevey339/kelivo'),
+                onTap: () => _openUrl('https://github.com/zhilsinger/kelivo'),
               ),
               _iosDivider(context),
               _iosNavRow(
@@ -670,22 +670,8 @@ class _AboutPageState extends State<AboutPage> {
                 icon: Lucide.FileText,
                 label: l10n.aboutPageLicense,
                 onTap: () => _openUrl(
-                  'https://github.com/Chevey339/kelivo/blob/master/LICENSE',
+                  'https://github.com/zhilsinger/kelivo/blob/master/LICENSE',
                 ),
-              ),
-              _iosDivider(context),
-              _iosNavRowSvgLeading(
-                context,
-                svgAsset: 'assets/icons/tencent-qq.svg',
-                label: l10n.aboutPageJoinQQGroup,
-                onTap: () => _openUrl('https://qm.qq.com/q/OQaXetKssC'),
-              ),
-              _iosDivider(context),
-              _iosNavRowSvgLeading(
-                context,
-                svgAsset: 'assets/icons/discord.svg',
-                label: l10n.aboutPageJoinDiscord,
-                onTap: () => _openUrl('https://discord.gg/Tb8DyvvV5T'),
               ),
             ],
           ),
