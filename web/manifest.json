@@ -1,6 +1,6 @@
 {
-    "name": "Kelizo",
-    "short_name": "Kelizo",
+    "name": "kelizo",
+    "short_name": "kelizo",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#FFFFFF",
