@@ -83,6 +83,10 @@ class UpdateProvider extends ChangeNotifier {
   String? get error => _error;
 
   Future<void> checkForUpdates() async {
+    // Update check disabled — configure your own update server when ready.
+    // To re-enable, uncomment below and set your update.json URL.
+    return;
+    /*
     if (_checking) return;
     _checking = true;
     _error = null;
@@ -90,7 +94,7 @@ class UpdateProvider extends ChangeNotifier {
     try {
       final ts = DateTime.now().millisecondsSinceEpoch;
       final url = Uri.parse(
-        'https://kelivo.psycheas.top/update.json?kelivo=$ts',
+        'https://YOUR_SERVER/update.json?t=$ts',
       );
       final resp = await http.get(url);
       if (resp.statusCode != 200) {
@@ -101,9 +105,8 @@ class UpdateProvider extends ChangeNotifier {
       final info = UpdateInfo.fromJson(data);
 
       final pkg = await PackageInfo.fromPlatform();
-      final currentVer = pkg.version; // e.g., 1.0.0
+      final currentVer = pkg.version;
 
-      // Compare by version only; ignore build numbers
       final hasNew = _isRemoteNewer(
         remoteVersion: info.version,
         currentVersion: currentVer,
@@ -115,13 +118,13 @@ class UpdateProvider extends ChangeNotifier {
       _checking = false;
       notifyListeners();
     }
+    */
   }
 
   bool _isRemoteNewer({
     required String remoteVersion,
     required String currentVersion,
   }) {
-    // Compare semantic versions only (ignore internal build numbers)
     List<int> parseVer(String v) {
       final parts = v.split('.');
       final nums = <int>[];
