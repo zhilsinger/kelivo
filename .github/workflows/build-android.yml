@@ -7,7 +7,7 @@ on:
 
 jobs:
   android:
-    name: Build Android (split per ABI)
+    name: Build Android
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -15,8 +15,6 @@ jobs:
     steps:
       - name: 📦 Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: ☕ Setup Java 17
         uses: actions/setup-java@v4
@@ -27,7 +25,7 @@ jobs:
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: master
+          channel: stable
           cache: true
 
       - name: 📦 Get dependencies
@@ -42,21 +40,31 @@ jobs:
       - name: 🖼️ Generate launcher icons
         run: flutter pub run flutter_launcher_icons
 
-      - name: 📝 Get version
-        id: version
+      - name: 🔑 Setup signing
+        shell: bash
         run: |
-          VERSION=$(grep 'version:' pubspec.yaml | sed 's/version: //' | tr -d ' ')
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Version: $VERSION"
+          if [ -n "$SIGN_KEYSTORE_BASE64" ]; then
+            echo "$SIGN_KEYSTORE_BASE64" | base64 --decode > android/app/key.jks
+            echo "storeFile=key.jks" >> android/key.properties
+            echo "storePassword=$KEYSTORE_PASSWORD" >> android/key.properties
+            echo "keyAlias=$KEY_ALIAS" >> android/key.properties
+            echo "keyPassword=$KEY_PASSWORD" >> android/key.properties
+            echo "✅ Release signing configured"
+          else
+            echo "ℹ️ No signing key — using debug keystore"
+          fi
+        env:
+          SIGN_KEYSTORE_BASE64: ${{ secrets.SIGN_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-      - name: 🔑 Setup signing (debug)
-        run: echo "Using debug signing"
-
-      - name: 🏗️ Build APK (split per ABI)
+      - name: 🏗️ Build APK
         run: flutter build apk --release --split-per-abi
 
       - name: 📦 Rename APKs
         run: |
+          VERSION=$(grep 'version:' pubspec.yaml | sed 's/version: //' | tr -d ' ')
           cd build/app/outputs/flutter-apk
           for file in app-*-release.apk; do
             abi=$(echo "$file" | sed -E 's/app-(.*)-release\.apk/\1/')
