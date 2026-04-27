@@ -13,6 +13,7 @@ import '../../../utils/sandbox_path_resolver.dart';
 import '../../../core/services/haptics.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import '../../../shared/widgets/snackbar.dart';
+import '../widgets/assistant_clone_sheet.dart';
 
 class AssistantSettingsPage extends StatelessWidget {
   const AssistantSettingsPage({super.key});
@@ -37,6 +38,16 @@ class AssistantSettingsPage extends StatelessWidget {
         ),
         title: Text(l10n.assistantSettingsPageTitle),
         actions: [
+          Tooltip(
+            message: l10n.assistantSettingsCloneSheetTitle,
+            child: _TactileIconButton(
+              icon: Lucide.CopyPlus,
+              color: cs.onSurface,
+              size: 22,
+              onTap: () => showAssistantCloneSheet(context),
+            ),
+          ),
+          const SizedBox(width: 4),
           Tooltip(
             message: l10n.assistantSettingsAddSheetSave,
             child: _TactileIconButton(
