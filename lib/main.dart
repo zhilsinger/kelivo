@@ -34,6 +34,7 @@ import 'core/providers/hotkey_provider.dart';
 import 'core/services/chat/chat_service.dart';
 import 'core/services/mcp/mcp_tool_service.dart';
 import 'core/services/logging/flutter_logger.dart';
+import 'core/services/supabase/sync_orchestrator.dart';
 import 'features/home/services/tool_approval_service.dart';
 import 'utils/sandbox_path_resolver.dart';
 import 'shared/widgets/snackbar.dart';
@@ -49,6 +50,7 @@ final RouteObserver<ModalRoute<dynamic>> routeObserver =
     RouteObserver<ModalRoute<dynamic>>();
 bool _didCheckUpdates = false; // one-time update check flag
 bool _didEnsureAssistants = false; // ensure defaults after l10n ready
+bool _didInitSyncOrchestrator = false; // one-time sync orch init
 
 Future<void> main() async {
   await runZoned(
@@ -68,18 +70,8 @@ Future<void> main() async {
       } catch (_) {}
       // Desktop (Windows) window setup: hide native title bar for custom Flutter bar
       await _initDesktopWindow();
-      // Avoid preloading all system fonts at launch (huge memory on desktop)
-      // Debug logging and global error handlers were enabled previously for diagnosis.
-      // They are commented out now per request to reduce log noise.
-      // FlutterError.onError = (FlutterErrorDetails details) { ... };
-      // WidgetsBinding.instance.platformDispatcher.onError = (Object error, StackTrace stack) { ... };
-      // logging.Logger.root.level = logging.Level.ALL;
-      // logging.Logger.root.onRecord.listen((rec) { ... });
-      // Cache current Documents directory to fix sandboxed absolute paths on iOS
       await SandboxPathResolver.init();
-      // Enable edge-to-edge to allow content under system bars (Android)
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-      // Start app (Flutter log capture is toggleable and off by default)
       runApp(const MyApp());
     },
     zoneSpecification: ZoneSpecification(
@@ -104,8 +96,6 @@ Future<void> _initDesktopWindow() async {
     // Ignore on unsupported platforms.
   }
 }
-
-// Removed eager system font preloading to reduce memory footprint at launch.
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -132,7 +122,6 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(create: (_) => WorldBookProvider()),
         ChangeNotifierProvider(create: (_) => MemoryProvider()),
-        // Desktop hotkeys provider
         ChangeNotifierProvider(create: (_) => HotkeyProvider()),
         ChangeNotifierProvider(
           create: (ctx) => BackupProvider(
@@ -150,10 +139,21 @@ class MyApp extends StatelessWidget {
       child: Builder(
         builder: (context) {
           final settings = context.watch<SettingsProvider>();
-          // Apply global proxy overrides when settings change
           settings.applyGlobalProxyOverridesIfNeeded();
-          // Lazily ensure system fonts only if user selected a system family (desktop only)
-          // Load ONLY selected families to avoid huge memory from loading all system fonts.
+
+          // One-time Supabase sync orchestrator init
+          if (!_didInitSyncOrchestrator && settings.supabaseConfigured) {
+            _didInitSyncOrchestrator = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              try {
+                await SyncOrchestrator.instance.init(
+                  userId: settings.supabaseUserId,
+                  wifiOnly: settings.supabaseWifiOnly,
+                );
+              } catch (_) {}
+            });
+          }
+
           WidgetsBinding.instance.addPostFrameCallback((_) async {
             try {
               final isDesktop =
@@ -162,7 +162,6 @@ class MyApp extends StatelessWidget {
                       defaultTargetPlatform == TargetPlatform.macOS ||
                       defaultTargetPlatform == TargetPlatform.linux);
               if (!isDesktop) return;
-              // Selected system app/code fonts (not Google, not local alias)
               final wantsAppSystem =
                   (settings.appFontFamily?.isNotEmpty == true) &&
                   !settings.appFontIsGoogle &&
@@ -190,7 +189,6 @@ class MyApp extends StatelessWidget {
               }
             } catch (_) {}
           });
-          // One-time app update check after first build
           if (settings.showAppUpdates && !_didCheckUpdates) {
             _didCheckUpdates = true;
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -201,19 +199,8 @@ class MyApp extends StatelessWidget {
           }
           return DynamicColorBuilder(
             builder: (lightDynamic, darkDynamic) {
-              // if (lightDynamic != null) {
-              //   debugPrint('[DynamicColor] Light dynamic detected. primary=${lightDynamic.primary.value.toRadixString(16)} surface=${lightDynamic.surface.value.toRadixString(16)}');
-              // } else {
-              //   debugPrint('[DynamicColor] Light dynamic not available');
-              // }
-              // if (darkDynamic != null) {
-              //   debugPrint('[DynamicColor] Dark dynamic detected. primary=${darkDynamic.primary.value.toRadixString(16)} surface=${darkDynamic.surface.value.toRadixString(16)}');
-              // } else {
-              //   debugPrint('[DynamicColor] Dark dynamic not available');
-              // }
               final isAndroid =
                   Theme.of(context).platform == TargetPlatform.android;
-              // Update dynamic color capability for settings UI (avoid notify during build)
               final dynSupported =
                   isAndroid && (lightDynamic != null || darkDynamic != null);
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -222,7 +209,6 @@ class MyApp extends StatelessWidget {
                 } catch (_) {}
               });
 
-              // Initialize desktop hotkeys on supported platforms
               WidgetsBinding.instance.addPostFrameCallback((_) async {
                 try {
                   final isDesktop =
@@ -236,7 +222,6 @@ class MyApp extends StatelessWidget {
                 } catch (_) {}
               });
 
-              // Android-only: ensure background execution matches setting and prepare notifications if needed
               WidgetsBinding.instance.addPostFrameCallback((_) async {
                 try {
                   if (Platform.isAndroid) {
@@ -244,7 +229,6 @@ class MyApp extends StatelessWidget {
                     if (mode != AndroidBackgroundChatMode.off) {
                       final l10n = AppLocalizations.of(context);
                       if (l10n == null) return;
-                      // Enable only if currently disabled to avoid duplicate ROM prompts
                       try {
                         final already =
                             await AndroidBackgroundManager.isEnabled();
@@ -280,7 +264,6 @@ class MyApp extends StatelessWidget {
                 dynamicScheme: useDyn ? darkDynamic : null,
                 pureBackground: settings.usePureBackground,
               );
-              // Resolve effective app font family (system/Google/local alias)
               String? effectiveAppFontFamily() {
                 final fam = settings.appFontFamily;
                 if (fam == null || fam.isEmpty) return null;
@@ -297,7 +280,6 @@ class MyApp extends StatelessWidget {
 
               final effectiveAppFont = effectiveAppFontFamily();
 
-              // Apply user-selected app font to theme text styles and app bar
               ThemeData applyAppFont(ThemeData base) {
                 if (effectiveAppFont == null || effectiveAppFont.isEmpty) {
                   return base;
@@ -328,7 +310,6 @@ class MyApp extends StatelessWidget {
                   toolbarTextStyle: (bar.toolbarTextStyle ?? const TextStyle())
                       .copyWith(fontFamily: effectiveAppFont),
                 );
-                // Apply as default family to all text in ThemeData
                 return base.copyWith(
                   textTheme: apply(base.textTheme),
                   primaryTextTheme: apply(base.primaryTextTheme),
@@ -338,13 +319,9 @@ class MyApp extends StatelessWidget {
 
               final themedLight = applyAppFont(light);
               final themedDark = applyAppFont(dark);
-              // Log top-level colors likely used by widgets (card/bg/shadow approximations)
-              // debugPrint('[Theme/App] Light scaffoldBg=${light.colorScheme.surface.value.toRadixString(16)} card≈${light.colorScheme.surface.value.toRadixString(16)} shadow=${light.colorScheme.shadow.value.toRadixString(16)}');
-              // debugPrint('[Theme/App] Dark scaffoldBg=${dark.colorScheme.surface.value.toRadixString(16)} card≈${dark.colorScheme.surface.value.toRadixString(16)} shadow=${dark.colorScheme.shadow.value.toRadixString(16)}');
               return MaterialApp(
                 debugShowCheckedModeBanner: false,
                 title: 'Kelivo',
-                // App UI language; null = follow system (respects iOS per-app language)
                 locale: settings.appLocaleForMaterialApp,
                 supportedLocales: AppLocalizations.supportedLocales,
                 localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -374,7 +351,6 @@ class MyApp extends StatelessWidget {
                           systemNavigationBarDividerColor: Colors.transparent,
                           systemNavigationBarContrastEnforced: false,
                         );
-                  // Ensure localized defaults (assistants and chat default title) after first frame
                   if (!_didEnsureAssistants) {
                     _didEnsureAssistants = true;
                     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -396,7 +372,6 @@ class MyApp extends StatelessWidget {
                     });
                   }
 
-                  // Desktop tray + close behaviour (minimize to tray) sync
                   final l10n = AppLocalizations.of(ctx);
                   if (l10n != null) {
                     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -418,7 +393,6 @@ class MyApp extends StatelessWidget {
                     });
                   }
 
-                  // Enforce app font as a default across the tree for Texts without explicit family
                   return AnnotatedRegion<SystemUiOverlayStyle>(
                     value: overlay,
                     child: effectiveAppFont == null
@@ -443,7 +417,6 @@ class MyApp extends StatelessWidget {
 }
 
 Widget _selectHome() {
-  // Mobile remains the default platform. Desktop is an added platform.
   if (kIsWeb) return const HomePage();
   final isDesktop =
       defaultTargetPlatform == TargetPlatform.macOS ||
@@ -451,5 +424,3 @@ Widget _selectHome() {
       defaultTargetPlatform == TargetPlatform.linux;
   return isDesktop ? const DesktopHomePage() : const HomePage();
 }
-
-// Overrides logic is implemented within SettingsProvider now.
