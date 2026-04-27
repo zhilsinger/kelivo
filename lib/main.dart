@@ -34,6 +34,7 @@ import 'core/providers/hotkey_provider.dart';
 import 'core/services/chat/chat_service.dart';
 import 'core/services/mcp/mcp_tool_service.dart';
 import 'core/services/logging/flutter_logger.dart';
+import 'core/services/supabase/supabase_memory_settings.dart';
 import 'features/home/services/tool_approval_service.dart';
 import 'utils/sandbox_path_resolver.dart';
 import 'shared/widgets/snackbar.dart';
@@ -132,6 +133,7 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(create: (_) => WorldBookProvider()),
         ChangeNotifierProvider(create: (_) => MemoryProvider()),
+        ChangeNotifierProvider(create: (_) => SupabaseMemorySettings()),
         // Desktop hotkeys provider
         ChangeNotifierProvider(create: (_) => HotkeyProvider()),
         ChangeNotifierProvider(
