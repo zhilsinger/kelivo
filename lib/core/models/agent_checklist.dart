@@ -18,7 +18,6 @@ enum ChecklistOwnerType {
 @HiveType(typeId: 21)
 enum ChecklistVisibility {
   @HiveField(0)
-  @HiveField(0)
   private,
   @HiveField(1)
   shared,
@@ -55,13 +54,13 @@ enum ChecklistPermission {
 @HiveType(typeId: 24)
 class ChecklistAccessGrant extends HiveObject {
   @HiveField(0)
-  final String principalType; // assistant, team, user
+  final String principalType;
 
   @HiveField(1)
   final String principalId;
 
   @HiveField(2)
-  final List<String> permissions; // serialized ChecklistPermission names
+  final List<String> permissions;
 
   ChecklistAccessGrant({
     required this.principalType,
@@ -119,7 +118,7 @@ class AgentChecklist extends HiveObject {
   final DoubleCheckMode validationPolicy;
 
   @HiveField(11)
-  final int requiredConsecutivePasses; // default 2
+  final int requiredConsecutivePasses;
 
   AgentChecklist({
     String? id,
