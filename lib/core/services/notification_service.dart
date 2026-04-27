@@ -1,4 +1,4 @@
-﻿import 'dart:io' show Platform;
+import 'dart:io' show Platform;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class NotificationService {
@@ -9,6 +9,14 @@ class NotificationService {
     'kelizo_bg_chat_v2',
     'Chat Background',
     description: 'Notifications for chat generation status',
+    importance: Importance.high,
+    playSound: true,
+  );
+  static const AndroidNotificationChannel _timerChannel =
+      AndroidNotificationChannel(
+    'kelizo_agent_timers_v1',
+    'Agent Timers',
+    description: 'Notifications for agent timer events',
     importance: Importance.high,
     playSound: true,
   );
@@ -25,19 +33,21 @@ class NotificationService {
     );
     await _plugin.initialize(init);
 
-    // Create channel
+    // Create channels
     final android = _plugin
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
         >();
     if (android != null) {
       await android.createNotificationChannel(_channel);
+      await android.createNotificationChannel(_timerChannel);
       // Runtime notification permission (Android 13+) should be requested by app UI if needed
     }
     _inited = true;
   }
 
-  /// Ensure Android 13+ notifications permission is granted (no-op on lower versions/other platforms).
+  /// Ensure Android 13+ notifications permission is granted (no-op on lower
+  // versions/other platforms).
   static Future<bool> ensureAndroidNotificationsPermission() async {
     if (!Platform.isAndroid) return true;
     final android = _plugin
@@ -77,6 +87,30 @@ class NotificationService {
           visibility: NotificationVisibility.public,
           ticker: 'Kelizo',
           styleInformation: const DefaultStyleInformation(true, true),
+        ),
+      ),
+    );
+  }
+
+  static Future<void> showTimerFired({
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    if (!Platform.isAndroid) return;
+    await ensureInitialized();
+    await _plugin.show(
+      2002,
+      title,
+      body,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          _timerChannel.id,
+          _timerChannel.name,
+          channelDescription: _timerChannel.description,
+          importance: Importance.max,
+          priority: Priority.max,
+          payload: payload,
         ),
       ),
     );
