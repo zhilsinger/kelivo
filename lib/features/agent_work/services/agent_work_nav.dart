@@ -4,7 +4,9 @@ import '../pages/verification_report_page.dart';
 
 /// Static navigation helpers for agent work pages.
 class AgentWorkNav {
-  /// Open the main agent work hub page.
+  AgentWorkNav._();
+
+  /// Open the main agent work hub.
   static void openAgentWork(BuildContext context) {
     Navigator.push(
       context,
@@ -12,7 +14,7 @@ class AgentWorkNav {
     );
   }
 
-  /// Open the verification report for a specific checklist item.
+  /// Open a verification report for a specific checklist item.
   static void openVerificationReport(BuildContext context, String itemId) {
     Navigator.push(
       context,
