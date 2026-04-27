@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 
@@ -196,4 +198,29 @@ class ChatMessage extends HiveObject {
       durationMs: json['durationMs'] as int?,
     );
   }
+
+  // ===== Supabase Sync =====
+
+  /// Compute a stable content hash for sync diffing.
+  String computeContentHash() {
+    final bytes = utf8.encode(content);
+    return sha256.convert(bytes).toString().substring(0, 32);
+  }
+
+  /// Map this message to Supabase messages table format.
+  Map<String, dynamic> toSupabaseJson({
+    required String userId,
+    required String threadId,
+  }) => {
+    'id': id,
+    'user_id': userId,
+    'thread_id': threadId,
+    'role': role,
+    'content': content,
+    'content_hash': computeContentHash(),
+    'model_id': modelId,
+    'provider_id': providerId,
+    'total_tokens': totalTokens,
+    'created_at': timestamp.toUtc().toIso8601String(),
+  };
 }
