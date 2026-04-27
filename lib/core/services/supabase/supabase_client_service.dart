@@ -50,6 +50,17 @@ class SupabaseClientService {
     }
   }
 
+  /// Call a Postgres RPC function.
+  /// Used by Phase 4 memory search (match_message_chunks_hybrid) and
+  /// Phase 6 context builder.
+  Future<dynamic> rpc(String functionName, {Map<String, dynamic>? params}) async {
+    final response = await _client.post(
+      '/rpc/$functionName',
+      data: params,
+    );
+    return response.data;
+  }
+
   /// Upsert a thread (insert or update by id)
   Future<void> upsertThread(Map<String, dynamic> data) async {
     await _client.post('/threads', data: data, queryParameters: {
