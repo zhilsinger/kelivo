@@ -66,10 +66,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage>
     with SingleTickerProviderStateMixin, RouteAware, WidgetsBindingObserver {
-  // ============================================================================
-  // UI Controllers (owned by State for lifecycle management)
-  // ============================================================================
-
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final InteractiveDrawerController _drawerController =
       InteractiveDrawerController();
@@ -85,15 +81,7 @@ class _HomePageState extends State<HomePage>
   final GlobalKey _selectionExportBarKey = GlobalKey();
   StreamSubscription<String>? _processTextSub;
 
-  // ============================================================================
-  // Page Controller (manages all business logic and state)
-  // ============================================================================
-
   late HomePageController _controller;
-
-  // ============================================================================
-  // Lifecycle
-  // ============================================================================
 
   @override
   void initState() {
@@ -881,9 +869,6 @@ class _HomePageState extends State<HomePage>
         return result;
       },
       onStop: _controller.cancelStreaming,
-      hasQueuedInput: _controller.currentQueuedInput != null,
-      queuedPreviewText: _controller.currentQueuedInput?.input.text,
-      onCancelQueuedInput: _controller.cancelQueuedMessage,
       onQuickPhrase: _showQuickPhraseMenu,
       onLongPressQuickPhrase: () {
         Navigator.of(

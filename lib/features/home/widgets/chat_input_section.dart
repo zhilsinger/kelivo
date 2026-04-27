@@ -50,9 +50,6 @@ class ChatInputSection extends StatelessWidget {
     this.onConfigureReasoning,
     this.onSend,
     this.onStop,
-    this.hasQueuedInput = false,
-    this.queuedPreviewText,
-    this.onCancelQueuedInput,
     this.onQuickPhrase,
     this.onLongPressQuickPhrase,
     this.onToggleOcr,
@@ -67,7 +64,6 @@ class ChatInputSection extends StatelessWidget {
     this.onCompressContext,
     // Queue panel
     this.onOpenQueuePanel,
-    this.queueCount = 0,
   });
 
   final GlobalKey inputBarKey;
@@ -92,9 +88,6 @@ class ChatInputSection extends StatelessWidget {
   final VoidCallback? onConfigureReasoning;
   final Future<ChatInputSubmissionResult> Function(ChatInputData)? onSend;
   final VoidCallback? onStop;
-  final bool hasQueuedInput;
-  final String? queuedPreviewText;
-  final VoidCallback? onCancelQueuedInput;
   final VoidCallback? onQuickPhrase;
   final VoidCallback? onLongPressQuickPhrase;
   final VoidCallback? onToggleOcr;
@@ -109,7 +102,6 @@ class ChatInputSection extends StatelessWidget {
   final VoidCallback? onCompressContext;
   // Queue panel
   final VoidCallback? onOpenQueuePanel;
-  final int queueCount;
 
   @override
   Widget build(BuildContext context) {
@@ -120,7 +112,8 @@ class ChatInputSection extends StatelessWidget {
 
     // Read queue count from provider
     final queueProvider = context.watch<PromptQueueProvider>();
-    final queueCount = queueProvider.queueLength;
+    final currentConvId = a?.id; // placeholder - actual current conv ID comes via controller
+    final queueCount = context.watch<PromptQueueProvider>().queueLength;
 
     // Use unified helper to get model identifiers
     final modelIds = getActiveModelIds(settings, assistant: a);
@@ -178,9 +171,6 @@ class ChatInputSection extends StatelessWidget {
       onOpenSearch: onOpenSearch,
       onSend: onSend,
       loading: isLoading,
-      hasQueuedInput: hasQueuedInput,
-      queuedPreviewText: queuedPreviewText,
-      onCancelQueuedInput: onCancelQueuedInput,
       // Queue parameters
       queueCount: queueCount,
       onOpenQueuePanel: onOpenQueuePanel,
