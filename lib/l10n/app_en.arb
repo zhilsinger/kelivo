@@ -2063,5 +2063,27 @@
     "placeholders": {
       "score": {"type": "int"}
     }
-  }
+  },
+  "supabaseMemoryModeOff": "Off",
+  "supabaseMemoryModeCurrentThread": "Current Thread",
+  "supabaseMemoryModeAllArchives": "All Archives",
+  "supabaseMemoryModePinned": "Pinned",
+  "supabaseMemoryModeProject": "Project",
+  "supabaseMemoryContextPreviewTitle": "Memory Context",
+  "supabaseMemoryContextPreviewTokens": "{tokens} est. tokens",
+  "@supabaseMemoryContextPreviewTokens": {
+    "placeholders": {
+      "tokens": {"type": "String"}
+    }
+  },
+  "supabaseMemoryContextPreviewSources": "{count} sources",
+  "@supabaseMemoryContextPreviewSources": {
+    "placeholders": {
+      "count": {"type": "String"}
+    }
+  },
+  "supabaseMemoryContextPreviewRemove": "Remove",
+  "supabaseMemoryContextPreviewEmpty": "No memories found for this query",
+  "supabaseMemoryContextPreviewAddMore": "Search Again",
+  "supabaseMemoryInjectedLabel": "Memory injected"
 }
