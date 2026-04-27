@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
@@ -363,6 +365,12 @@ class SupabaseClientService {
   // ===========================================================================
   // Helpers
   // ===========================================================================
+
+  /// Compute a stable SHA-256 hash of a string for sync diffing.
+  static String hashContent(String content) {
+    final bytes = utf8.encode(content);
+    return sha256.convert(bytes).toString().substring(0, 32);
+  }
 
   /// Sync a full thread (thread + messages) to Supabase in one call.
   Future<void> syncThread({
