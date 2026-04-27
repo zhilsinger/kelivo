@@ -184,3 +184,128 @@ CREATE POLICY "backup_manifests_delete_own" ON public.backup_manifests
 --   FOR INSERT WITH CHECK (owner = public.app_user_id());
 -- CREATE POLICY "storage_delete_own" ON storage.objects
 --   FOR DELETE USING (owner = public.app_user_id());
+
+-- =============================================================================
+-- MESSAGE CHUNKS (PR4 — Full-text keyword search, no embeddings yet)
+-- =============================================================================
+create table if not exists public.message_chunks (
+  id              uuid primary key default gen_random_uuid(),
+  user_id         text not null,
+  thread_id       text not null references public.threads(id) on delete cascade,
+  message_id      text references public.messages(id) on delete cascade,
+  chunk_index     integer not null,
+  chunk_text      text not null,
+  chunk_hash      text not null,
+  token_estimate  integer,
+  -- Source metadata for AI context references (not in chunk_text)
+  source_thread_title   text,
+  source_message_role   text,
+  source_created_at     timestamptz,
+  source_position       integer,
+  -- Full-text search vector
+  search_vector   tsvector,
+  -- Versioning (PREPARED for PR5 — no embeddings yet)
+  embedding_model      text,
+  embedding_dimensions integer,
+  chunker_version      text default 'kelivo_chunker_v1',
+  indexed_at           timestamptz,
+  needs_reindex        boolean default false,
+  -- Metadata
+  created_at      timestamptz default now(),
+  -- Memory scoring (PREPARED for PR7 — defaults for now)
+  memory_score    integer default 1,
+  memory_type     text,
+  pinned          boolean default false,
+  reviewed        boolean default false,
+  -- Access tracking (PREPARED for PR7)
+  last_accessed_at  timestamptz,
+  access_count      integer default 0,
+  decay_after_days  integer,
+  stale             boolean default false,
+  -- Unique constraint
+  unique(message_id, chunk_index)
+);
+
+-- Indexes
+create index if not exists idx_message_chunks_thread_id on public.message_chunks(thread_id);
+create index if not exists idx_message_chunks_user_id   on public.message_chunks(user_id);
+create index if not exists idx_message_chunks_hash      on public.message_chunks(chunk_hash);
+
+-- Full-text search index (GIN for tsvector)
+create index if not exists idx_message_chunks_search
+  on public.message_chunks
+  using gin(search_vector);
+
+-- Trigger: auto-populate search_vector from chunk_text on INSERT or UPDATE
+create or replace function public.message_chunks_search_update()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.search_vector := to_tsvector('english', coalesce(new.chunk_text, ''));
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_message_chunks_search on public.message_chunks;
+create trigger trg_message_chunks_search
+  before insert or update of chunk_text
+  on public.message_chunks
+  for each row
+  execute function public.message_chunks_search_update();
+
+-- =============================================================================
+-- RPC: search_message_chunks_fts(query, target_user_id, match_limit)
+-- Exact keyword / full-text search. No embeddings. No vector math.
+-- Returns chunks ranked by ts_rank, with source metadata.
+-- =============================================================================
+create or replace function public.search_message_chunks_fts(
+  search_query   text,
+  target_user_id text,
+  match_limit    integer default 20
+)
+returns table (
+  chunk_id              uuid,
+  thread_id             text,
+  message_id            text,
+  chunk_index           integer,
+  chunk_text            text,
+  source_thread_title   text,
+  source_message_role   text,
+  source_created_at     timestamptz,
+  rank                  real
+)
+language sql
+stable
+as $$
+  select
+    mc.id,
+    mc.thread_id,
+    mc.message_id,
+    mc.chunk_index,
+    mc.chunk_text,
+    mc.source_thread_title,
+    mc.source_message_role,
+    mc.source_created_at,
+    ts_rank(mc.search_vector, plainto_tsquery('english', search_query)) as rank
+  from public.message_chunks mc
+  where mc.user_id = target_user_id
+    and mc.search_vector @@ plainto_tsquery('english', search_query)
+  order by rank desc
+  limit match_limit;
+$$;
+
+-- RLS: message_chunks
+alter table public.message_chunks enable row level security;
+
+create policy "message_chunks_select_own" on public.message_chunks
+  for select using (user_id = public.app_user_id());
+
+create policy "message_chunks_insert_own" on public.message_chunks
+  for insert with check (user_id = public.app_user_id());
+
+create policy "message_chunks_update_own" on public.message_chunks
+  for update using (user_id = public.app_user_id());
+
+create policy "message_chunks_delete_own" on public.message_chunks
+  for delete using (user_id = public.app_user_id());
