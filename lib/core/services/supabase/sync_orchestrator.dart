@@ -9,6 +9,7 @@ import 'package:battery_plus/battery_plus.dart';
 
 import 'sync_queue.dart';
 import 'supabase_client_service.dart';
+import 'supabase_index_service.dart';
 import '../../models/chat_message.dart';
 import '../../models/conversation.dart';
 
@@ -36,6 +37,10 @@ class SyncOrchestrator extends ChangeNotifier {
   Timer? _periodicTimer;
   bool _wifiOnly = false;
   String? _userId;
+
+  // ── PR4: Chunk indexing ──
+  SupabaseIndexService? _indexService;
+  bool _indexEnabled = true;
 
   bool get initialized => _initialized;
   bool get isProcessing => _isProcessing;
@@ -77,6 +82,15 @@ class SyncOrchestrator extends ChangeNotifier {
     if (wifiOnly != null) _wifiOnly = wifiOnly;
   }
 
+  /// Configure the chunk indexing service (PR4).
+  void configureIndexing({
+    SupabaseIndexService? indexService,
+    bool? indexEnabled,
+  }) {
+    if (indexService != null) _indexService = indexService;
+    if (indexEnabled != null) _indexEnabled = indexEnabled;
+  }
+
   void clear() {
     _periodicTimer?.cancel();
     _periodicTimer = null;
@@ -85,6 +99,7 @@ class SyncOrchestrator extends ChangeNotifier {
     _status = SyncStatus.idle;
     _initialized = false;
     _userId = null;
+    _indexService = null;
   }
 
   // ---------------------------------------------------------------------------
@@ -261,6 +276,19 @@ class SyncOrchestrator extends ChangeNotifier {
               }
 
               await _queueBox.delete(job.id);
+
+              // ── PR4: Index synced thread for full-text search ──
+              try {
+                if (_indexService != null && _indexEnabled) {
+                  await _indexService!.indexThread(
+                    threadId: conversation.id,
+                    threadTitle: conversation.title,
+                    messages: messagePayloads,
+                  );
+                }
+              } catch (_) {
+                // Indexing is best-effort; don't block sync pipeline
+              }
             }
           }
         } catch (e) {
