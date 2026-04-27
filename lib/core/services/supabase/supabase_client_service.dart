@@ -115,4 +115,40 @@ class SupabaseClientService {
       await upsertMessages(messages);
     }
   }
+
+  // ──────────────────────────────────────────────
+  // Memory decisions & feedback (Phase 5)
+  // ──────────────────────────────────────────────
+
+  /// Fetch memory decisions, optionally filtered by assistant.
+  Future<List<Map<String, dynamic>>> fetchMemoryDecisions({String? assistantId}) async {
+    final params = <String, String>{
+      'select': '*',
+      'order': 'created_at.desc',
+    };
+    if (assistantId != null) {
+      params['assistant_id'] = 'eq.$assistantId';
+    }
+    final response = await _client.get('/memory_decisions', queryParameters: params);
+    return (response.data as List?)?.cast<Map<String, dynamic>>() ?? [];
+  }
+
+  /// Upsert a memory decision (insert or update by id).
+  Future<void> upsertMemoryDecision(Map<String, dynamic> data) async {
+    await _client.post('/memory_decisions', data: data, queryParameters: {
+      'on_conflict': 'id',
+    });
+  }
+
+  /// Delete a memory decision by its primary key.
+  Future<void> deleteMemoryDecision(int id) async {
+    await _client.delete('/memory_decisions', queryParameters: {
+      'id': 'eq.$id',
+    });
+  }
+
+  /// Submit user feedback on a memory retrieval.
+  Future<void> submitMemoryFeedback(Map<String, dynamic> data) async {
+    await _client.post('/memory_feedback', data: data);
+  }
 }
