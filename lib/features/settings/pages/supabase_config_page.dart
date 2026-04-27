@@ -74,6 +74,7 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
   Future<void> _save() async {
     final url = _urlController.text.trim();
     final key = _keyController.text.trim();
+    final l10n = AppLocalizations.of(context)!;
     final settings = context.read<SettingsProvider>();
     await settings.setSupabaseConfig(url, key);
     if (url.isNotEmpty && key.isNotEmpty) {
@@ -81,13 +82,14 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
     }
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Saved'), duration: Duration(seconds: 2)),
+        SnackBar(content: Text(l10n.supabaseConfigPageSaved), duration: const Duration(seconds: 2)),
       );
       Navigator.of(context).maybePop();
     }
   }
 
   void _clear() async {
+    final l10n = AppLocalizations.of(context)!;
     final settings = context.read<SettingsProvider>();
     await settings.clearSupabaseConfig();
     SupabaseClientService.instance.clear();
@@ -99,26 +101,27 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
         _tableResults = {};
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cleared'), duration: Duration(seconds: 2)),
+        SnackBar(content: Text(l10n.supabaseConfigPageCleared), duration: const Duration(seconds: 2)),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final settings = context.watch<SettingsProvider>();
 
     return Scaffold(
       appBar: AppBar(
         leading: Tooltip(
-          message: AppLocalizations.of(context)!.settingsPageBackButton,
+          message: l10n.settingsPageBackButton,
           child: IconButton(
             icon: const Icon(Lucide.ArrowLeft),
             onPressed: () => Navigator.of(context).maybePop(),
           ),
         ),
-        title: const Text('Supabase Sync'),
+        title: Text(l10n.supabaseConfigPageTitle),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -143,7 +146,9 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  settings.supabaseConfigured ? 'Connected' : 'Not configured',
+                  settings.supabaseConfigured
+                      ? l10n.supabaseConfigPageConnected
+                      : l10n.supabaseConfigPageNotConfigured,
                   style: TextStyle(
                     color: settings.supabaseConfigured
                         ? cs.primary
@@ -157,16 +162,16 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
           const SizedBox(height: 16),
 
           // URL field
-          const Text('Server URL',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          Text(l10n.supabaseConfigPageServerUrl,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 6),
           TextField(
             controller: _urlController,
-            decoration: const InputDecoration(
-              hintText: 'https://your-project.supabase.co',
-              border: OutlineInputBorder(),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: InputDecoration(
+              hintText: l10n.supabaseConfigPageServerUrlHint,
+              border: const OutlineInputBorder(),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             ),
             keyboardType: TextInputType.url,
             autocorrect: false,
@@ -174,14 +179,14 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
           const SizedBox(height: 16),
 
           // Anon Key field
-          const Text('Anon Key',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          Text(l10n.supabaseConfigPageAnonKey,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 6),
           TextField(
             controller: _keyController,
             decoration: InputDecoration(
-              hintText: 'eyJ...',
+              hintText: l10n.supabaseConfigPageAnonKeyHint,
               border: const OutlineInputBorder(),
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               suffixIcon: IconButton(
@@ -205,7 +210,7 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Lucide.Wifi, size: 18),
-              label: Text(_testing ? 'Testing...' : 'Test Connection'),
+              label: Text(_testing ? l10n.supabaseConfigPageTesting : l10n.supabaseConfigPageTestConnection),
             ),
           ),
 
@@ -221,7 +226,7 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Table Validation',
+                  Text(l10n.supabaseConfigPageTableValidation,
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -267,7 +272,8 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
           ],
 
           // Simple connection test result (when table validation not run)
-          if (_testResult != null && _tableResults.isEmpty) ...[\n            const SizedBox(height: 8),
+          if (_testResult != null && _tableResults.isEmpty) ...[
+            const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -278,7 +284,9 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  _testResult! ? 'Connection successful' : 'Connection failed',
+                  _testResult!
+                      ? l10n.supabaseConfigPageConnectionSuccess
+                      : l10n.supabaseConfigPageConnectionFailed,
                   style: TextStyle(
                     color: _testResult! ? Colors.green : Colors.red,
                     fontSize: 13,
@@ -291,9 +299,9 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
 
           // Auto-sync toggle
           SwitchListTile(
-            title: const Text('Auto-sync', style: TextStyle(fontSize: 14)),
+            title: Text(l10n.supabaseConfigPageAutoSync, style: const TextStyle(fontSize: 14)),
             subtitle: Text(
-              'Automatically sync threads to Supabase after each message',
+              l10n.supabaseConfigPageAutoSyncSubtitle,
               style: TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.6)),
             ),
             value: settings.supabaseAutoSyncEnabled,
@@ -306,9 +314,9 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
 
           // AI Memory toggle
           SwitchListTile(
-            title: const Text('AI Memory Indexing', style: TextStyle(fontSize: 14)),
+            title: Text(l10n.supabaseConfigPageAiMemoryIndexing, style: const TextStyle(fontSize: 14)),
             subtitle: Text(
-              'Index message chunks for semantic search (requires embedding provider)',
+              l10n.supabaseConfigPageAiMemorySubtitle,
               style: TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.6)),
             ),
             value: settings.supabaseAiMemoryEnabled,
@@ -328,7 +336,7 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
                 child: FilledButton.icon(
                   onPressed: _save,
                   icon: const Icon(Lucide.Save, size: 18),
-                  label: const Text('Save'),
+                  label: Text(l10n.supabaseConfigPageSave),
                 ),
               ),
               const SizedBox(width: 12),
@@ -336,7 +344,7 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
                 child: OutlinedButton.icon(
                   onPressed: _clear,
                   icon: const Icon(Lucide.Trash2, size: 18),
-                  label: const Text('Clear'),
+                  label: Text(l10n.supabaseConfigPageClear),
                 ),
               ),
             ],
@@ -357,8 +365,7 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Run the SQL migration in your Supabase project SQL Editor first (supabase/migrations/001_base_schema.sql). '
-                    'Then test connection to validate all required tables exist with correct permissions.',
+                    l10n.supabaseConfigPageInfoText,
                     style: TextStyle(
                       fontSize: 12,
                       color: cs.onSurface.withValues(alpha: 0.6),

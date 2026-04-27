@@ -554,7 +554,7 @@
   "backupPageRestoreTooltip": "Restore",
   "backupPageDeleteTooltip": "Delete",
   "backupPageDeleteConfirmTitle": "Confirm Deletion",
-  "backupPageDeleteConfirmContent": "Are you sure you want to delete remote backup "{name}"? This action cannot be undone.",
+  "backupPageDeleteConfirmContent": "Are you sure you want to delete remote backup \"{name}\"? This action cannot be undone.",
   "backupPageBackupManagement": "Backup Management",
   "backupPageWebDavBackup": "WebDAV Backup",
   "backupPageWebDavServerSettings": "WebDAV Server Settings",
@@ -816,7 +816,7 @@
   "sideDrawerMenuRegenerateTitle": "Regenerate Title",
   "sideDrawerMenuMoveTo": "Move to",
   "sideDrawerMenuDelete": "Delete",
-  "sideDrawerDeleteSnackbar": "Deleted "{title}"",
+  "sideDrawerDeleteSnackbar": "Deleted \"{title}\"",
   "@sideDrawerDeleteSnackbar": {
     "placeholders": {
       "title": {
@@ -2035,5 +2035,26 @@
       }
     }
   },
-  "threadBackupDetailClose": "Close"
+  "threadBackupDetailClose": "Close",
+  "supabaseConfigPageTitle": "Supabase Sync",
+  "supabaseConfigPageConnected": "Connected",
+  "supabaseConfigPageNotConfigured": "Not configured",
+  "supabaseConfigPageServerUrl": "Server URL",
+  "supabaseConfigPageServerUrlHint": "https://your-project.supabase.co",
+  "supabaseConfigPageAnonKey": "Anon Key",
+  "supabaseConfigPageAnonKeyHint": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "supabaseConfigPageTestConnection": "Test Connection",
+  "supabaseConfigPageTesting": "Testing...",
+  "supabaseConfigPageTableValidation": "Table Validation",
+  "supabaseConfigPageConnectionFailed": "Connection failed",
+  "supabaseConfigPageConnectionSuccess": "Connection successful",
+  "supabaseConfigPageAutoSync": "Auto-sync",
+  "supabaseConfigPageAutoSyncSubtitle": "Automatically sync threads to Supabase after each message",
+  "supabaseConfigPageAiMemoryIndexing": "AI Memory Indexing",
+  "supabaseConfigPageAiMemorySubtitle": "Index message chunks for semantic search (requires embedding provider)",
+  "supabaseConfigPageSaved": "Saved",
+  "supabaseConfigPageCleared": "Cleared",
+  "supabaseConfigPageSave": "Save",
+  "supabaseConfigPageClear": "Clear",
+  "supabaseConfigPageInfoText": "Run the SQL migration in your Supabase project SQL Editor first (supabase/migrations/001_base_schema.sql). Then test connection to validate all required tables exist with correct permissions."
 }
