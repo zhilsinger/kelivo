@@ -1,4 +1,4 @@
-﻿{
+{
   "helloWorld": "Hello World!",
   "settingsPageBackButton": "Back",
   "settingsPageTitle": "Settings",
@@ -166,7 +166,7 @@
   "sponsorPageSponsorsSectionTitle": "Sponsors",
   "sponsorPageEmpty": "No sponsors yet",
   "sponsorPageAfdianTitle": "Afdian",
-  "sponsorPageAfdianSubtitle": "afdian.com/a/kelizo",
+  "sponsorPageAfdianSubtitle": "afdian.com/a/kelivo",
   "sponsorPageWeChatTitle": "WeChat Sponsor",
   "sponsorPageWeChatSubtitle": "WeChat sponsor code",
   "sponsorPageScanQrHint": "Scan the QR code to sponsor",
@@ -373,7 +373,7 @@
   "androidBackgroundOptionOff": "Off",
   "notificationChatCompletedTitle": "Generation complete",
   "notificationChatCompletedBody": "Assistant reply has been generated",
-  "androidBackgroundNotificationTitle": "Kelizo is running",
+  "androidBackgroundNotificationTitle": "Kelivo is running",
   "androidBackgroundNotificationText": "Keeping chat generation alive in background",
   "assistantEditEmojiDialogTitle": "Choose Emoji",
   "assistantEditEmojiDialogHint": "Type or paste any emoji",
@@ -573,6 +573,22 @@
   "backupPageLocalBackup": "Local Backup",
   "backupPageImportFromCherryStudio": "Import from Cherry Studio",
   "backupPageImportFromChatbox": "Import from Chatbox",
+  "backupPageSupabaseBackup": "Supabase Backup",
+  "backupPageSupabaseSettings": "Supabase Storage Settings",
+  "backupPageSupabaseBucket": "Bucket Name",
+  "backupPageSupabaseBucketHint": "kelivo-backups",
+  "backupPageSupabaseTestSuccess": "Supabase storage accessible",
+  "backupPageSupabaseUploaded": "Backup uploaded to Supabase",
+  "backupPageSupabaseRestored": "Restored from Supabase",
+  "backupPageSupabaseNotConfigured": "Supabase not configured. Set URL and Anon Key in Supabase Sync settings first.",
+  "backupPageSupabaseListFailed": "Failed to list Supabase backups: {error}",
+  "@backupPageSupabaseListFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "chatHistoryPageTitle": "Chat History",
   "chatHistoryPageSearchTooltip": "Search",
   "chatHistoryPageDeleteAllTooltip": "Delete Unpinned",
@@ -816,7 +832,7 @@
   "sideDrawerMenuRegenerateTitle": "Regenerate Title",
   "sideDrawerMenuMoveTo": "Move to",
   "sideDrawerMenuDelete": "Delete",
-  "sideDrawerDeleteSnackbar": "Deleted {title}",
+  "sideDrawerDeleteSnackbar": "Deleted \"{title}\"",
   "@sideDrawerDeleteSnackbar": {
     "placeholders": {
       "title": {
@@ -1201,7 +1217,7 @@
   "providerGroupsCreateDialogOk": "Create",
   "providerGroupsCreateFailedToast": "Failed to create group",
   "providerGroupsDeleteConfirmTitle": "Delete group?",
-  "providerGroupsDeleteConfirmContent": "Providers in this group will be moved to Other.",
+  "providerGroupsDeleteConfirmContent": "Providers in this group will be moved to \"Other\".",
   "providerGroupsDeleteConfirmCancel": "Cancel",
   "providerGroupsDeleteConfirmOk": "Delete",
   "providerGroupsDeletedToast": "Group deleted",
@@ -1326,7 +1342,7 @@
   "searchSettingsSheetNoServicesMessage": "No services. Add from Search Services.",
   "aboutPageEasterEggMessage": "Thanks for exploring! \n (No egg yet)",
   "aboutPageEasterEggButton": "Nice!",
-  "aboutPageAppName": "Kelizo",
+  "aboutPageAppName": "Kelivo",
   "aboutPageAppDescription": "Open-source AI Assistant",
   "aboutPageNoQQGroup": "No QQ group yet",
   "aboutPageVersion": "Version",
@@ -1530,7 +1546,7 @@
       }
     }
   },
-  "settingsShare": "Kelizo - Open Source AI Assistant",
+  "settingsShare": "Kelivo - Open Source AI Assistant",
   "searchProviderBingLocalDescription": "Uses web scraping to fetch Bing results. No API key required; may be unstable.",
   "searchProviderDuckDuckGoDescription": "Privacy-focused DuckDuckGo search via DDGS. No API key required; supports region selection.",
   "searchProviderBraveDescription": "Independent search engine by Brave. Privacy-focused with no tracking or profiling.",
@@ -1787,7 +1803,7 @@
   "worldBookExport": "Share / Export",
   "worldBookConfig": "Configure",
   "worldBookDeleteTitle": "Delete World Book",
-  "worldBookDeleteMessage": "Delete {name}? This cannot be undone.",
+  "worldBookDeleteMessage": "Delete \"{name}\"? This cannot be undone.",
   "@worldBookDeleteMessage": {
     "placeholders": {
       "name": {
@@ -1850,7 +1866,7 @@
   "toolApprovalDeny": "Deny",
   "toolApprovalDenyTitle": "Deny tool call",
   "toolApprovalDenyHint": "Reason (optional)",
-  "toolApprovalDeniedMessage": "Tool call {toolName} was denied by user. Reason: {reason}",
+  "toolApprovalDeniedMessage": "Tool call \"{toolName}\" was denied by user. Reason: {reason}",
   "tokenDetailPromptTokens": "{count} tokens",
   "@tokenDetailPromptTokens": {
     "placeholders": {
@@ -1870,7 +1886,7 @@
       "count": {"type": "int"}
     }
   },
-  "tokenDetailSpeed": "{value} tokens",
+  "tokenDetailSpeed": "{value} tok/s",
   "@tokenDetailSpeed": {
     "placeholders": {
       "value": {"type": "String"}
@@ -1992,7 +2008,7 @@
   "threadBackupSourceGemini": "Gemini",
   "threadBackupSourcePerplexity": "Perplexity",
   "threadBackupSourceClaude": "Claude",
-  "threadBackupSourceKelizo": "Kelizo",
+  "threadBackupSourceKelivo": "Kelivo",
   "threadBackupSourceOther": "Other",
   "threadBackupDetailSource": "Source: {source}",
   "@threadBackupDetailSource": {

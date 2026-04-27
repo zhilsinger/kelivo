@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 enum RestoreMode {
   overwrite, // 完全覆盖：清空本地后恢复
@@ -166,6 +166,53 @@ class S3Config {
       return S3Config.fromJson(map);
     } catch (_) {
       return const S3Config();
+    }
+  }
+
+  String toJsonString() => jsonEncode(toJson());
+}
+
+class SupabaseBackupConfig {
+  final String bucketName;
+  final bool includeChats;
+  final bool includeFiles;
+
+  const SupabaseBackupConfig({
+    this.bucketName = 'kelivo-backups',
+    this.includeChats = true,
+    this.includeFiles = true,
+  });
+
+  SupabaseBackupConfig copyWith({
+    String? bucketName,
+    bool? includeChats,
+    bool? includeFiles,
+  }) => SupabaseBackupConfig(
+    bucketName: bucketName ?? this.bucketName,
+    includeChats: includeChats ?? this.includeChats,
+    includeFiles: includeFiles ?? this.includeFiles,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'bucketName': bucketName,
+    'includeChats': includeChats,
+    'includeFiles': includeFiles,
+  };
+
+  static SupabaseBackupConfig fromJson(Map<String, dynamic> json) =>
+      SupabaseBackupConfig(
+    bucketName: (json['bucketName'] as String?)?.trim().isNotEmpty == true
+        ? (json['bucketName'] as String).trim()
+        : 'kelivo-backups',
+    includeChats: json['includeChats'] as bool? ?? true,
+    includeFiles: json['includeFiles'] as bool? ?? true,
+  );
+
+  static SupabaseBackupConfig fromJsonString(String s) {
+    try {
+      return fromJson(jsonDecode(s) as Map<String, dynamic>);
+    } catch (_) {
+      return const SupabaseBackupConfig();
     }
   }
 
