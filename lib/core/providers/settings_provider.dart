@@ -248,6 +248,7 @@ class SettingsProvider extends ChangeNotifier {
   static const String _supabaseAiMemoryEnabledKey = 'supabase_ai_memory_v1';
   static const String _supabaseBucketNameKey = 'supabase_bucket_name_v1';
   static const String _supabaseWifiOnlyKey = 'supabase_wifi_only_v1';
+  static const String _supabaseAutoIndexEnabledKey = 'supabase_auto_index_v1';
 
   // ===== Network TTS services =====
   List<TtsServiceOptions> _ttsServices = const <TtsServiceOptions>[];
@@ -337,6 +338,7 @@ class SettingsProvider extends ChangeNotifier {
   bool _supabaseAiMemoryEnabled = false;
   String _supabaseBucketName = 'kelivo-backups';
   bool _supabaseWifiOnly = false;
+  bool _supabaseAutoIndexEnabled = true;
 
   String get supabaseUrl => _supabaseUrl;
   String get supabaseAnonKey => _supabaseAnonKey;
@@ -347,6 +349,7 @@ class SettingsProvider extends ChangeNotifier {
   bool get supabaseAiMemoryEnabled => _supabaseAiMemoryEnabled;
   String get supabaseBucketName => _supabaseBucketName;
   bool get supabaseWifiOnly => _supabaseWifiOnly;
+  bool get supabaseAutoIndexEnabled => _supabaseAutoIndexEnabled;
 
   Map<String, ProviderConfig> _providerConfigs = {};
   Map<String, ProviderConfig> get providerConfigs =>
@@ -537,6 +540,8 @@ class SettingsProvider extends ChangeNotifier {
     _supabaseBucketName =
         prefs.getString(_supabaseBucketNameKey) ?? 'kelivo-backups';
     _supabaseWifiOnly = prefs.getBool(_supabaseWifiOnlyKey) ?? false;
+    _supabaseAutoIndexEnabled =
+        prefs.getBool(_supabaseAutoIndexEnabledKey) ?? true;
     var providerConfigsLoaded = false;
     final cfgStr = prefs.getString(_providerConfigsKey);
     if (cfgStr != null && cfgStr.isNotEmpty) {
@@ -1245,6 +1250,14 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_supabaseWifiOnlyKey, v);
+  }
+
+  Future<void> setSupabaseAutoIndexEnabled(bool enabled) async {
+    if (_supabaseAutoIndexEnabled == enabled) return;
+    _supabaseAutoIndexEnabled = enabled;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_supabaseAutoIndexEnabledKey, enabled);
   }
 
   Future<void> setTtsServices(List<TtsServiceOptions> v) async {
@@ -3527,6 +3540,14 @@ DO NOT GIVE ANSWERS OR DO HOMEWORK FOR THE USER. If the user asks a math or logi
     copy._desktopMinimizeToTrayOnClose = _desktopMinimizeToTrayOnClose;
     copy._usePureBackground = _usePureBackground;
     copy._chatMessageBackgroundStyle = _chatMessageBackgroundStyle;
+    copy._supabaseUrl = _supabaseUrl;
+    copy._supabaseAnonKey = _supabaseAnonKey;
+    copy._supabaseUserId = _supabaseUserId;
+    copy._supabaseAutoSyncEnabled = _supabaseAutoSyncEnabled;
+    copy._supabaseAiMemoryEnabled = _supabaseAiMemoryEnabled;
+    copy._supabaseBucketName = _supabaseBucketName;
+    copy._supabaseWifiOnly = _supabaseWifiOnly;
+    copy._supabaseAutoIndexEnabled = _supabaseAutoIndexEnabled;
     return copy;
   }
 }
