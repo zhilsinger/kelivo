@@ -1,5 +1,11 @@
 part of 'assistant_settings_edit_page.dart';
 
+// Phase 5 — Cloud memory support imports
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:kelivo/core/models/cloud_memory_metadata.dart';
+import 'package:kelivo/core/services/supabase/supabase_client_service.dart';
+
 class _MemoryTab extends StatelessWidget {
   const _MemoryTab({required this.assistantId});
   final String assistantId;
@@ -466,6 +472,186 @@ class _MemoryTab extends StatelessWidget {
             ),
           );
         }),
+
+        // ──────────────────────────────────────────────
+        // Phase 5: Cloud Memories section
+        // Shown only when Supabase is configured and
+        // cloud metadata exists for this assistant.
+        // ──────────────────────────────────────────────
+        Builder(
+          builder: (ctx) {
+            if (!SupabaseClientService.instance.isConfigured) {
+              return const SizedBox.shrink();
+            }
+            try {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                mp.loadCloudMetadata();
+              });
+            } catch (_) {}
+            final cloudMeta = mp.cloudMetadata;
+            if (cloudMeta.isEmpty) return const SizedBox.shrink();
+            final cloudMemories = memories
+                .where((m) => cloudMeta.containsKey(m.id))
+                .toList();
+            if (cloudMemories.isEmpty) return const SizedBox.shrink();
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                  child: Row(
+                    children: [
+                      Icon(Lucide.Cloud, size: 16, color: cs.primary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          l10n.memoryReviewCloudSection,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                ...cloudMemories.map((m) {
+                  final meta = cloudMeta[m.id]!;
+                  final sourceLabel = meta.source == CloudMemorySource.supabase
+                      ? l10n.memoryReviewSourceSupabase
+                      : l10n.memoryReviewSourceLocal;
+                  final sourceColor = meta.source == CloudMemorySource.supabase
+                      ? Colors.blue
+                      : Colors.green;
+
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white10
+                            : Colors.white.withValues(alpha: 0.96),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: cs.outlineVariant.withValues(
+                            alpha: isDark ? 0.08 : 0.06,
+                          ),
+                          width: 0.6,
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? sourceColor.shade800
+                                        : sourceColor.shade50,
+                                    borderRadius: BorderRadius.circular(999),
+                                    border: Border.all(
+                                      color: cs.outlineVariant
+                                          .withValues(alpha: 0.12),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        meta.source ==
+                                                CloudMemorySource.supabase
+                                            ? Lucide.Cloud
+                                            : Lucide.Smartphone,
+                                        size: 11,
+                                        color: isDark
+                                            ? sourceColor.shade200
+                                            : sourceColor.shade700,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        sourceLabel,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: isDark
+                                              ? sourceColor.shade200
+                                              : sourceColor.shade700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                if (meta.pinned)
+                                  Icon(Lucide.Pin,
+                                      size: 12, color: cs.primary),
+                                const Spacer(),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: List.generate(5, (i) {
+                                    final filled =
+                                        i < meta.memoryScore.clamp(0, 5);
+                                    return Padding(
+                                      padding: EdgeInsets.only(
+                                        left: i > 0 ? 3 : 0,
+                                      ),
+                                      child: Container(
+                                        width: 7,
+                                        height: 7,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: filled
+                                              ? cs.primary
+                                                  .withValues(alpha: 0.8)
+                                              : cs.onSurface
+                                                  .withValues(alpha: 0.15),
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              m.content,
+                              maxLines: 4,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                            if (meta.sourceThreadId != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                l10n.memoryReviewWhyRemembered,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: cs.onSurface.withValues(alpha: 0.5),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            );
+          },
+        ),
+
+        // ──────────────────────────────────────────────
+        // End Phase 5 Cloud Memories section
+        // ──────────────────────────────────────────────
 
         // Summaries section
         Padding(
