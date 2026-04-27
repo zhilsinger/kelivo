@@ -48,6 +48,7 @@ import '../widgets/message_list_view.dart';
 import '../widgets/chat_input_section.dart';
 import '../widgets/chat_selection_app_bar.dart';
 import '../widgets/chat_selection_export_bar.dart';
+import '../widgets/memory_mode_selector.dart';
 import '../utils/model_display_helper.dart';
 import '../utils/chat_layout_constants.dart';
 import '../controllers/home_page_controller.dart';
@@ -383,6 +384,8 @@ class _HomePageState extends State<HomePage>
                   },
                 ),
               ),
+              // Supabase AI memory mode selector (Phase 6)
+              const MemoryModeSelectorBar(),
               if (_controller.selecting)
                 ChatSelectionExportBar(
                   key: _selectionExportBarKey,
@@ -557,6 +560,8 @@ class _HomePageState extends State<HomePage>
                           .fadeIn(duration: 200.ms, curve: Curves.easeOutCubic),
                 ),
               ),
+              // Supabase AI memory mode selector (Phase 6)
+              const MemoryModeSelectorBar(),
               if (_controller.selecting)
                 Center(
                   child: ConstrainedBox(
