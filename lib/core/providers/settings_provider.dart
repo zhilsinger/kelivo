@@ -1,4 +1,4 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
@@ -220,6 +220,7 @@ class SettingsProvider extends ChangeNotifier {
       'search_auto_test_on_launch_v1';
   static const String _webDavConfigKey = 'webdav_config_v1';
   static const String _s3ConfigKey = 's3_config_v1';
+  static const String _supabaseBackupConfigKey = 'supabase_backup_config_v1';
   // Global network proxy
   static const String _globalProxyEnabledKey = 'global_proxy_enabled_v1';
   static const String _globalProxyTypeKey =
@@ -1042,6 +1043,15 @@ class SettingsProvider extends ChangeNotifier {
         );
       } catch (_) {}
     }
+    // supabase backup config
+    final supabaseBackupStr = prefs.getString(_supabaseBackupConfigKey);
+    if (supabaseBackupStr != null && supabaseBackupStr.isNotEmpty) {
+      try {
+        _supabaseBackupConfig = SupabaseBackupConfig.fromJson(
+          jsonDecode(supabaseBackupStr) as Map<String, dynamic>,
+        );
+      } catch (_) {}
+    }
     if (_providerConfigs.isEmpty) {
       // Seed a couple of sensible defaults on first launch, but do not recreate
       // providers implicitly during later reads (e.g., when switching chats).
@@ -1534,6 +1544,15 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_s3ConfigKey, jsonEncode(cfg.toJson()));
+  }
+
+  SupabaseBackupConfig _supabaseBackupConfig = const SupabaseBackupConfig();
+  SupabaseBackupConfig get supabaseBackupConfig => _supabaseBackupConfig;
+  Future<void> setSupabaseBackupConfig(SupabaseBackupConfig cfg) async {
+    _supabaseBackupConfig = cfg;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_supabaseBackupConfigKey, jsonEncode(cfg.toJson()));
   }
 
   Future<void> _initSearchConnectivityTests() async {
