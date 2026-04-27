@@ -1,42 +1,43 @@
-import 'package:uuid/uuid.dart';
 import 'chat_input_data.dart';
 
-/// A single item in the multi-item, persistent prompt queue.
-///
-/// This is a SEPARATE model from [QueuedChatInput] which is the
-/// old single-item transient queue. Both systems coexist independently.
+enum QueueItemSource { user, sideAssistant }
+
 class PromptQueueItem {
-  final String id; // uuid
+  final String id;
   final String conversationId;
   final ChatInputData input;
-  final int position; // order index in queue
+  final QueueItemSource source;
+  final String? sideChatNote;
   final DateTime createdAt;
-  final String? assistantId;
+  final int order;
 
   PromptQueueItem({
     required this.id,
     required this.conversationId,
     required this.input,
-    required this.position,
+    this.source = QueueItemSource.user,
+    this.sideChatNote,
     required this.createdAt,
-    this.assistantId,
+    required this.order,
   });
 
   PromptQueueItem copyWith({
     String? id,
     String? conversationId,
     ChatInputData? input,
-    int? position,
+    QueueItemSource? source,
+    String? sideChatNote,
     DateTime? createdAt,
-    String? assistantId,
+    int? order,
   }) =>
       PromptQueueItem(
         id: id ?? this.id,
         conversationId: conversationId ?? this.conversationId,
         input: input ?? this.input,
-        position: position ?? this.position,
+        source: source ?? this.source,
+        sideChatNote: sideChatNote ?? this.sideChatNote,
         createdAt: createdAt ?? this.createdAt,
-        assistantId: assistantId ?? this.assistantId,
+        order: order ?? this.order,
       );
 
   Map<String, dynamic> toJson() => {
@@ -51,36 +52,43 @@ class PromptQueueItem {
                   'mime': d.mime,
                 })
             .toList(),
-        'position': position,
+        'source': source.name,
+        'sideChatNote': sideChatNote,
         'createdAt': createdAt.toIso8601String(),
-        'assistantId': assistantId,
+        'order': order,
       };
 
   factory PromptQueueItem.fromJson(Map<String, dynamic> json) {
     final docs = (json['documents'] as List?)
             ?.map((d) => DocumentAttachment(
-                  path: d['path'] as String? ?? '',
-                  fileName: d['fileName'] as String? ?? '',
-                  mime: d['mime'] as String? ?? '',
+                  path: (d['path'] ?? '').toString(),
+                  fileName: (d['fileName'] ?? '').toString(),
+                  mime: (d['mime'] ?? '').toString(),
                 ))
             .toList() ??
         [];
     return PromptQueueItem(
-      id: json['id'] as String? ?? const Uuid().v4(),
-      conversationId: json['conversationId'] as String? ?? '',
+      id: (json['id'] ?? '').toString(),
+      conversationId: (json['conversationId'] ?? '').toString(),
       input: ChatInputData(
-        text: json['text'] as String? ?? '',
+        text: (json['text'] ?? '').toString(),
         imagePaths: (json['imagePaths'] as List?)
                 ?.map((e) => e.toString())
                 .toList() ??
             [],
         documents: docs,
       ),
-      position: json['position'] as int? ?? 0,
+      source: _parseQueueItemSource(json['source'] as String?),
+      sideChatNote: json['sideChatNote'] as String?,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
           : DateTime.now(),
-      assistantId: json['assistantId'] as String?,
+      order: (json['order'] as int?) ?? 0,
     );
+  }
+
+  static QueueItemSource _parseQueueItemSource(String? s) {
+    if (s == 'sideAssistant') return QueueItemSource.sideAssistant;
+    return QueueItemSource.user;
   }
 }
