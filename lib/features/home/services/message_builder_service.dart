@@ -26,52 +26,16 @@ import '../../../core/utils/multimodal_input_utils.dart';
 import '../../../utils/assistant_regex.dart';
 import '../../../utils/markdown_media_sanitizer.dart';
 
+/// Service for building API messages from conversation state.
+///
+/// This service handles:
+/// - Building API messages list from chat history
+/// - Processing user messages (documents, OCR, templates)
+/// - Injecting system prompts
+/// - Injecting memory and recent chats context
+/// - Injecting search prompts
+/// - Injecting instruction prompts
+/// - Injecting agent work (checklist/timer) prompts
+/// - Applying context limits
+/// - Inlining local images for model context
 class MessageBuilderService {
-  static const String internalMediaPathsKey = multimodalInternalMediaPathsKey;
-
-  MessageBuilderService({
-    required this.chatService,
-    required this.contextProvider,
-    this.ocrHandler,
-    this.geminiThoughtSignatureHandler,
-  });
-
-  final ChatService chatService;
-  final BuildContext contextProvider;
-  final Future<String?> Function(List<String> imagePaths)? ocrHandler;
-  String Function(String ocrText)? ocrTextWrapper;
-  final String Function(ChatMessage message, String content)?
-      geminiThoughtSignatureHandler;
-
-  final Map<String, _DocTextCacheEntry> _docTextCache =
-      <String, _DocTextCacheEntry>{};
-
-  List<ChatMessage> collapseVersions(
-    List<ChatMessage> items,
-    Map<String, int> versionSelections,
-  ) {
-    final Map<String, List<ChatMessage>> byGroup =
-        <String, List<ChatMessage>>{};
-    final List<String> order = <String>[];
-    for (final m in items) {
-      final gid = (m.groupId ?? m.id);
-      final list = byGroup.putIfAbsent(gid, () {
-        order.add(gid);
-        return <ChatMessage>[];
-      });
-      list.add(m);
-    }
-    for (final e in byGroup.entries) {
-      e.value.sort((a, b) => a.version.compareTo(b.version));
-    }
-    final out = <ChatMessage>[];
-    for (final gid in order) {
-      final vers = byGroup[gid]!;
-      final sel = versionSelections[gid];
-      final idx = (sel != null && sel >= 0 && sel < vers.length)
-          ? sel
-          : (vers.length - 1);
-      out.add(vers[idx]);
-    }
-    return out;
-  }
