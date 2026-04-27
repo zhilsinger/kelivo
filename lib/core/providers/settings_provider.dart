@@ -243,6 +243,10 @@ class SettingsProvider extends ChangeNotifier {
   // ===== Supabase Sync Config =====
   static const String _supabaseUrlKey = 'supabase_url_v1';
   static const String _supabaseAnonKeyKey = 'supabase_anon_key_v1';
+  static const String _supabaseUserIdKey = 'supabase_user_id_v1';
+  static const String _supabaseAutoSyncEnabledKey = 'supabase_auto_sync_v1';
+  static const String _supabaseAiMemoryEnabledKey = 'supabase_ai_memory_v1';
+  static const String _supabaseBucketNameKey = 'supabase_bucket_name_v1';
 
   // ===== Network TTS services =====
   List<TtsServiceOptions> _ttsServices = const <TtsServiceOptions>[];
@@ -327,10 +331,19 @@ class SettingsProvider extends ChangeNotifier {
   // ===== Supabase Sync =====
   String _supabaseUrl = '';
   String _supabaseAnonKey = '';
+  String _supabaseUserId = '';
+  bool _supabaseAutoSyncEnabled = false;
+  bool _supabaseAiMemoryEnabled = false;
+  String _supabaseBucketName = 'kelivo-backups';
+
   String get supabaseUrl => _supabaseUrl;
   String get supabaseAnonKey => _supabaseAnonKey;
+  String get supabaseUserId => _supabaseUserId;
   bool get supabaseConfigured =>
       _supabaseUrl.isNotEmpty && _supabaseAnonKey.isNotEmpty;
+  bool get supabaseAutoSyncEnabled => _supabaseAutoSyncEnabled;
+  bool get supabaseAiMemoryEnabled => _supabaseAiMemoryEnabled;
+  String get supabaseBucketName => _supabaseBucketName;
 
   Map<String, ProviderConfig> _providerConfigs = {};
   Map<String, ProviderConfig> get providerConfigs =>
@@ -338,7 +351,7 @@ class SettingsProvider extends ChangeNotifier {
   bool get hasAnyActiveModel =>
       _providerConfigs.values.any((c) => c.enabled && c.models.isNotEmpty);
   // Returns a config for the given key without mutating internal state when missing.
-  // This avoids implicitly creating providers during read paths (e.g., rendering old chats).
+  // This avoids" :implicitly creating providers during read paths (e.g., rendering old chats).
   ProviderConfig getProviderConfig(String key, {String? defaultName}) {
     final existed = _providerConfigs[key];
     if (existed != null) return existed;
@@ -513,6 +526,13 @@ class SettingsProvider extends ChangeNotifier {
     // Load Supabase config
     _supabaseUrl = prefs.getString(_supabaseUrlKey) ?? '';
     _supabaseAnonKey = prefs.getString(_supabaseAnonKeyKey) ?? '';
+    _supabaseUserId = prefs.getString(_supabaseUserIdKey) ?? '';
+    _supabaseAutoSyncEnabled =
+        prefs.getBool(_supabaseAutoSyncEnabledKey) ?? false;
+    _supabaseAiMemoryEnabled =
+        prefs.getBool(_supabaseAiMemoryEnabledKey) ?? false;
+    _supabaseBucketName =
+        prefs.getString(_supabaseBucketNameKey) ?? 'kelivo-backups';
     var providerConfigsLoaded = false;
     final cfgStr = prefs.getString(_providerConfigsKey);
     if (cfgStr != null && cfgStr.isNotEmpty) {
@@ -1051,6 +1071,12 @@ class SettingsProvider extends ChangeNotifier {
       ensureProviderConfig('AIhubmix', defaultName: 'AIhubmix');
     }
 
+    // Generate Supabase user ID on first load if not set
+    if (_supabaseUserId.isEmpty) {
+      _supabaseUserId = const Uuid().v4();
+      await prefs.setString(_supabaseUserIdKey, _supabaseUserId);
+    }
+
     // kick off a one-time connectivity test for services (exclude local Bing)
     if (_searchAutoTestOnLaunch) {
       _initSearchConnectivityTests();
@@ -1180,10 +1206,35 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> clearSupabaseConfig() async {
     _supabaseUrl = '';
     _supabaseAnonKey = '';
+    _supabaseAutoSyncEnabled = false;
+    _supabaseAiMemoryEnabled = false;
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_supabaseUrlKey);
     await prefs.remove(_supabaseAnonKeyKey);
+  }
+
+  String get supabaseUserId => _supabaseUserId;
+
+  Future<void> setSupabaseAutoSyncEnabled(bool v) async {
+    _supabaseAutoSyncEnabled = v;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_supabaseAutoSyncEnabledKey, v);
+  }
+
+  Future<void> setSupabaseAiMemoryEnabled(bool v) async {
+    _supabaseAiMemoryEnabled = v;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_supabaseAiMemoryEnabledKey, v);
+  }
+
+  Future<void> setSupabaseBucketName(String v) async {
+    _supabaseBucketName = v.trim().isEmpty ? 'kelivo-backups' : v.trim();
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_supabaseBucketNameKey, _supabaseBucketName);
   }
 
   Future<void> setTtsServices(List<TtsServiceOptions> v) async {
@@ -2075,7 +2126,7 @@ class SettingsProvider extends ChangeNotifier {
         try {
           final oldFile = File(old.avatarValue!);
           if ((oldFile.path.contains('/avatars/') ||
-                  oldFile.path.contains('\\\\avatars\\\\')) &&
+                  oldFile.path.contains('\\avatars\\')) &&
               await oldFile.exists()) {
             await oldFile.delete();
           }
@@ -2103,7 +2154,7 @@ class SettingsProvider extends ChangeNotifier {
       try {
         final f = File(old.avatarValue!);
         if ((f.path.contains('/avatars/') ||
-                f.path.contains('\\\\avatars\\\\')) &&
+                f.path.contains('\\avatars\\')) &&
             await f.exists()) {
           await f.delete();
         }
