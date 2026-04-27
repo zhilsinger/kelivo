@@ -35,6 +35,8 @@ import 'core/services/chat/chat_service.dart';
 import 'core/services/mcp/mcp_tool_service.dart';
 import 'core/services/logging/flutter_logger.dart';
 import 'core/services/supabase/sync_orchestrator.dart';
+import 'core/services/supabase/supabase_search_service.dart';
+import 'core/services/supabase/supabase_index_service.dart';
 import 'features/home/services/tool_approval_service.dart';
 import 'utils/sandbox_path_resolver.dart';
 import 'shared/widgets/snackbar.dart';
@@ -135,13 +137,15 @@ class MyApp extends StatelessWidget {
             initialConfig: ctx.read<SettingsProvider>().s3Config,
           ),
         ),
+        // ── PR4: Full-text search service ──
+        ChangeNotifierProvider(create: (_) => SupabaseSearchService()),
       ],
       child: Builder(
         builder: (context) {
           final settings = context.watch<SettingsProvider>();
           settings.applyGlobalProxyOverridesIfNeeded();
 
-          // One-time Supabase sync orchestrator init
+          // One-time Supabase sync orchestrator init + PR4 indexing config
           if (!_didInitSyncOrchestrator && settings.supabaseConfigured) {
             _didInitSyncOrchestrator = true;
             WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -149,6 +153,11 @@ class MyApp extends StatelessWidget {
                 await SyncOrchestrator.instance.init(
                   userId: settings.supabaseUserId,
                   wifiOnly: settings.supabaseWifiOnly,
+                );
+                // ── PR4: Wire chunk indexing into sync pipeline ──
+                SyncOrchestrator.instance.configureIndexing(
+                  indexService: SupabaseIndexService(),
+                  indexEnabled: settings.supabaseAutoIndexEnabled,
                 );
               } catch (_) {}
             });
