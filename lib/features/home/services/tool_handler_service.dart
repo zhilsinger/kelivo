@@ -2,10 +2,13 @@ import 'dart:convert';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 import '../../../core/models/assistant.dart';
+import '../../../core/models/agent_actor.dart';
 import '../../../core/providers/assistant_provider.dart';
 import '../../../core/providers/mcp_provider.dart';
 import '../../../core/providers/memory_provider.dart';
 import '../../../core/providers/settings_provider.dart';
+import '../../../core/services/agent_tools/checklist_tool_service.dart';
+import '../../../core/services/agent_tools/timer_tool_service.dart';
 import '../../../core/services/mcp/mcp_tool_service.dart';
 import '../../../core/services/search/search_tool_service.dart';
 import 'tool_approval_service.dart';
@@ -16,11 +19,20 @@ import 'tool_approval_service.dart';
 /// - MCP 工具
 /// - Memory 工具 (create/edit/delete)
 /// - Search 工具
+/// - Agent Work 工具 (checklist/timer)
 class ToolHandlerService {
-  ToolHandlerService({required this.contextProvider});
+  ToolHandlerService({
+    required this.contextProvider,
+    ChecklistToolService? checklistToolService,
+    TimerToolService? timerToolService,
+  })  : _checklistToolService = checklistToolService,
+        _timerToolService = timerToolService;
 
   /// Build context (used for accessing providers)
   final BuildContext contextProvider;
+
+  final ChecklistToolService? _checklistToolService;
+  final TimerToolService? _timerToolService;
 
   // ============================================================================
   // Tool Schema Sanitization
@@ -143,6 +155,7 @@ class ToolHandlerService {
   /// Returns a list of tool definitions including:
   /// - Search tool (if enabled and model supports tools)
   /// - Memory tools (if assistant has memory enabled)
+  /// - Agent work tools (checklist + timer, if assistant has memory enabled)
   /// - MCP tools (from selected servers for the assistant)
   List<Map<String, dynamic>> buildToolDefinitions(
     SettingsProvider settings,
@@ -163,6 +176,16 @@ class ToolHandlerService {
     // Memory tools
     if (assistant?.enableMemory == true && supportsTools) {
       toolDefs.addAll(_buildMemoryToolDefinitions());
+    }
+
+    // Agent work tools (checklist + timer), gated behind assistant.enableMemory
+    if (assistant?.enableMemory == true && supportsTools) {
+      if (_checklistToolService != null) {
+        toolDefs.addAll(_checklistToolService!.buildToolDefinitions());
+      }
+      if (_timerToolService != null) {
+        toolDefs.addAll(_timerToolService!.buildToolDefinitions());
+      }
     }
 
     // MCP tools
@@ -305,6 +328,7 @@ class ToolHandlerService {
   /// Supports:
   /// - Search tool calls
   /// - Memory tool calls (create/edit/delete)
+  /// - Agent work tools (checklist/timer)
   /// - MCP tool calls
   Future<String> Function(String, Map<String, dynamic>)? buildToolCallHandler(
     SettingsProvider settings,
@@ -329,6 +353,32 @@ class ToolHandlerService {
         final memoryResult = await _handleMemoryToolCall(name, args, assistant);
         if (memoryResult != null) {
           return memoryResult;
+        }
+
+        // Agent work tools (checklist + timer)
+        if (_checklistToolService != null &&
+            _checklistToolService!.isChecklistTool(name)) {
+          final actor = assistant != null
+              ? AgentActor.fromAssistant(assistant)
+              : const AgentActor(
+                  id: 'system', name: 'system', type: ActorType.system);
+          return await _checklistToolService!.call(
+            actor: actor,
+            name: name,
+            args: args,
+          );
+        }
+        if (_timerToolService != null &&
+            _timerToolService!.isTimerTool(name)) {
+          final actor = assistant != null
+              ? AgentActor.fromAssistant(assistant)
+              : const AgentActor(
+                  id: 'system', name: 'system', type: ActorType.system);
+          return await _timerToolService!.call(
+            actor: actor,
+            name: name,
+            args: args,
+          );
         }
 
         // Approval gate for MCP tools
