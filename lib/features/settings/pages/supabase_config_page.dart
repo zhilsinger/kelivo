@@ -4,6 +4,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../icons/lucide_adapter.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/supabase/supabase_client_service.dart';
+import '../../../core/services/supabase/sync_orchestrator.dart';
 
 class SupabaseConfigPage extends StatefulWidget {
   const SupabaseConfigPage({super.key});
@@ -19,6 +20,7 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
   bool? _testResult;
   bool _obscureKey = true;
   Map<String, TableValidationResult> _tableResults = {};
+  bool _syncNowLoading = false;
 
   @override
   void initState() {
@@ -79,6 +81,13 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
     await settings.setSupabaseConfig(url, key);
     if (url.isNotEmpty && key.isNotEmpty) {
       SupabaseClientService.instance.configure(url, key, userId: settings.supabaseUserId);
+      // Init sync orchestrator with current settings
+      try {
+        await SyncOrchestrator.instance.init(
+          userId: settings.supabaseUserId,
+          wifiOnly: settings.supabaseWifiOnly,
+        );
+      } catch (_) {}
     }
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -93,6 +102,7 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
     final settings = context.read<SettingsProvider>();
     await settings.clearSupabaseConfig();
     SupabaseClientService.instance.clear();
+    SyncOrchestrator.instance.clear();
     if (mounted) {
       _urlController.clear();
       _keyController.clear();
@@ -106,11 +116,39 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
     }
   }
 
+  Future<void> _syncNow() async {
+    setState(() => _syncNowLoading = true);
+    try {
+      await SyncOrchestrator.instance.processQueue();
+    } finally {
+      if (mounted) {
+        setState(() => _syncNowLoading = false);
+      }
+    }
+  }
+
+  String _syncStatusLabel(SyncStatus status, AppLocalizations l10n) {
+    switch (status) {
+      case SyncStatus.idle:
+        return l10n.supabaseSyncStatusIdle;
+      case SyncStatus.syncing:
+        return l10n.supabaseSyncStatusSyncing;
+      case SyncStatus.paused:
+        return l10n.supabaseSyncStatusPaused;
+      case SyncStatus.error:
+        return l10n.supabaseSyncStatusError;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final settings = context.watch<SettingsProvider>();
+    final orchestrator = SyncOrchestrator.instance;
+    final pendingCount = orchestrator.pendingCount;
+    final deadCount = orchestrator.deadLetterCount;
+    final syncStatus = orchestrator.status;
 
     return Scaffold(
       appBar: AppBar(
@@ -312,6 +350,24 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
             contentPadding: EdgeInsets.zero,
           ),
 
+          // Wi-Fi only toggle
+          SwitchListTile(
+            title: Text(l10n.supabaseSyncWifiOnly, style: const TextStyle(fontSize: 14)),
+            subtitle: Text(
+              l10n.supabaseSyncWifiOnlySubtitle,
+              style: TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.6)),
+            ),
+            value: settings.supabaseWifiOnly,
+            onChanged: settings.supabaseConfigured
+                ? (v) {
+                    settings.setSupabaseWifiOnly(v);
+                    SyncOrchestrator.instance.configure(wifiOnly: v);
+                  }
+                : null,
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
+
           // AI Memory toggle
           SwitchListTile(
             title: Text(l10n.supabaseConfigPageAiMemoryIndexing, style: const TextStyle(fontSize: 14)),
@@ -328,6 +384,102 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
           ),
 
           const SizedBox(height: 16),
+
+          // Sync status + Sync Now
+          if (settings.supabaseConfigured) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        syncStatus == SyncStatus.syncing ? Lucide.RefreshCw : Lucide.Activity,
+                        size: 14,
+                        color: syncStatus == SyncStatus.syncing
+                            ? cs.primary
+                            : syncStatus == SyncStatus.error
+                                ? Colors.red
+                                : cs.onSurface.withValues(alpha: 0.5),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _syncStatusLabel(syncStatus, l10n),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: cs.onSurface.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (pendingCount > 0) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      l10n.supabaseSyncQueueCount(pendingCount),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: cs.onSurface.withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ],
+                  if (deadCount > 0) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      l10n.supabaseSyncDeadLetterCount(deadCount),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.red.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: (syncStatus == SyncStatus.syncing || _syncNowLoading)
+                              ? null
+                              : _syncNow,
+                          icon: _syncNowLoading
+                              ? const SizedBox(
+                                  width: 14, height: 14,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Lucide.RefreshCw, size: 14),
+                          label: Text(l10n.supabaseSyncNow),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                      ),
+                      if (pendingCount > 0) ...[
+                        const SizedBox(width: 8),
+                        OutlinedButton(
+                          onPressed: () => SyncOrchestrator.instance.clearAll(),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            foregroundColor: Colors.red,
+                          ),
+                          child: Text(l10n.supabaseConfigPageClear),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
 
           // Save / Clear buttons
           Row(
