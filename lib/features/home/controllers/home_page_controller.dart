@@ -9,6 +9,7 @@ import '../../../core/models/conversation.dart';
 import '../../../core/models/quick_phrase.dart';
 import '../../../core/models/assistant_regex.dart';
 import '../../../core/providers/assistant_provider.dart';
+import '../../../core/providers/prompt_queue_provider.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/providers/mcp_provider.dart';
 import '../../../core/providers/tts_provider.dart';
@@ -109,6 +110,7 @@ class HomePageController extends ChangeNotifier {
   late scroll_ctrl.ChatScrollController _scrollCtrl;
 
   McpProvider? _mcpProvider;
+  PromptQueueProvider? _queueProvider;
   StreamSubscription<ChatAction>? _chatActionSub;
 
   // ============================================================================
@@ -199,6 +201,13 @@ class HomePageController extends ChangeNotifier {
   String get globalSearchQuery => _globalSearchQuery;
   String? get spotlightMessageId => _spotlightMessageId;
   int get spotlightToken => _spotlightToken;
+
+  /// Number of items queued for the current conversation.
+  int get queueCount {
+    final cid = currentConversation?.id;
+    if (cid == null) return 0;
+    return _context.read<PromptQueueProvider>().getQueueLength(cid);
+  }
 
   static double get sidebarMinWidth => _sidebarMinWidth;
   static double get sidebarMaxWidth => _sidebarMaxWidth;
@@ -434,6 +443,10 @@ class HomePageController extends ChangeNotifier {
       _mcpProvider = _context.read<McpProvider>();
       _mcpProvider!.addListener(_onMcpChanged);
     } catch (_) {}
+    try {
+      _queueProvider = _context.read<PromptQueueProvider>();
+      _queueProvider!.addListener(_onQueueChanged);
+    } catch (_) {}
   }
 
   void _setupKeyboardListeners() {}
@@ -595,20 +608,10 @@ class HomePageController extends ChangeNotifier {
     return result;
   }
 
+  /// Cancel queued input. With a multi-item queue, the cancel button opens
+  /// the queue panel instead of restoring text. The HomePage wires the banner
+  /// cancel action to open the queue panel.
   void cancelQueuedMessage() {
-    final restored = _viewModel.cancelCurrentQueuedInput();
-    if (restored == null) return;
-
-    _inputController.value = TextEditingValue(
-      text: restored.text,
-      selection: TextSelection.collapsed(offset: restored.text.length),
-      composing: TextRange.empty,
-    );
-    _mediaController.restoreInput(restored);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_context.mounted) return;
-      _inputFocus.requestFocus();
-    });
     notifyListeners();
   }
 
@@ -1579,6 +1582,8 @@ class HomePageController extends ChangeNotifier {
     // Kept for potential future use
   }
 
+  void _onQueueChanged() => notifyListeners();
+
   // ============================================================================
   // Disposal
   // ============================================================================
@@ -1587,6 +1592,7 @@ class HomePageController extends ChangeNotifier {
   void dispose() {
     _convoFadeController.dispose();
     _mcpProvider?.removeListener(_onMcpChanged);
+    _queueProvider?.removeListener(_onQueueChanged);
     _scrollCtrl.dispose();
     try {
       _chatActionSub?.cancel();
