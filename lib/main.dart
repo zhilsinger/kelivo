@@ -124,10 +124,8 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(create: (_) => WorldBookProvider()),
         ChangeNotifierProvider(create: (_) => MemoryProvider()),
-        // Prompt queue provider (manages multi-item queued messages)
-        ChangeNotifierProvider(
-          create: (_) => PromptQueueProvider()..initialize(),
-        ),
+        // Prompt queue provider (multi-item queued messages)
+        ChangeNotifierProvider(create: (_) => PromptQueueProvider()..init()),
         // Desktop hotkeys provider
         ChangeNotifierProvider(create: (_) => HotkeyProvider()),
         ChangeNotifierProvider(
