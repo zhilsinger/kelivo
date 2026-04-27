@@ -25,17 +25,6 @@ import '../../../core/utils/multimodal_input_utils.dart';
 import '../../../utils/assistant_regex.dart';
 import '../../../utils/markdown_media_sanitizer.dart';
 
-/// Service for building API messages from conversation state.
-///
-/// This service handles:
-/// - Building API messages list from chat history
-/// - Processing user messages (documents, OCR, templates)
-/// - Injecting system prompts
-/// - Injecting memory and recent chats context
-/// - Injecting search prompts
-/// - Injecting instruction prompts
-/// - Applying context limits
-/// - Inlining local images for model context
 class MessageBuilderService {
   static const String internalMediaPathsKey = multimodalInternalMediaPathsKey;
 
@@ -47,26 +36,15 @@ class MessageBuilderService {
   });
 
   final ChatService chatService;
-
-  /// Build context (used for accessing providers via context.read)
   final BuildContext contextProvider;
-
-  /// OCR handler for processing images (optional, injected from home_page)
   final Future<String?> Function(List<String> imagePaths)? ocrHandler;
-
-  /// OCR text wrapper function
   String Function(String ocrText)? ocrTextWrapper;
-
-  /// Handler to append Gemini thought signatures for API calls
   final String Function(ChatMessage message, String content)?
-  geminiThoughtSignatureHandler;
+      geminiThoughtSignatureHandler;
 
-  /// Cache for document text extraction to avoid re-reading files on every message
-  /// Keyed by path, validated with (modified + size) to avoid stale reuse.
   final Map<String, _DocTextCacheEntry> _docTextCache =
       <String, _DocTextCacheEntry>{};
 
-  /// Collapse message versions to show only selected version per group.
   List<ChatMessage> collapseVersions(
     List<ChatMessage> items,
     Map<String, int> versionSelections,
@@ -74,7 +52,6 @@ class MessageBuilderService {
     final Map<String, List<ChatMessage>> byGroup =
         <String, List<ChatMessage>>{};
     final List<String> order = <String>[];
-
     for (final m in items) {
       final gid = (m.groupId ?? m.id);
       final list = byGroup.putIfAbsent(gid, () {
@@ -83,13 +60,9 @@ class MessageBuilderService {
       });
       list.add(m);
     }
-
-    // Sort each group by version
     for (final e in byGroup.entries) {
       e.value.sort((a, b) => a.version.compareTo(b.version));
     }
-
-    // Select the appropriate version from each group
     final out = <ChatMessage>[];
     for (final gid in order) {
       final vers = byGroup[gid]!;
@@ -99,13 +72,9 @@ class MessageBuilderService {
           : (vers.length - 1);
       out.add(vers[idx]);
     }
-
     return out;
   }
 
-  /// Build API messages list from current conversation state.
-  ///
-  /// Applies truncation, version collapsing, and strips [image:] / [file:] markers.
   List<Map<String, dynamic>> buildApiMessages({
     required List<ChatMessage> messages,
     required Map<String, int> versionSelections,
@@ -122,9 +91,13 @@ class MessageBuilderService {
       versionSelections,
     );
 
+    // Filter out system role messages (timer notifications, internal tracking)
+    // These are never sent to the LLM as conversation history.
+    final filteredSource = source.where((m) => m.role != 'system').toList();
+
     final out = <Map<String, dynamic>>[];
 
-    for (final m in source) {
+    for (final m in filteredSource) {
       String? toolContinuationReasoningContent;
       if (includeOpenAIToolMessages && m.role == 'assistant') {
         final events = chatService.getToolEvents(m.id);
@@ -216,7 +189,6 @@ class MessageBuilderService {
     String pick(ChatMessage candidate) {
       final direct = (candidate.reasoningText ?? '').trim();
       if (direct.isNotEmpty) return direct;
-
       final raw = (candidate.reasoningSegmentsJson ?? '').trim();
       if (raw.isEmpty) return '';
       try {
@@ -238,16 +210,13 @@ class MessageBuilderService {
         return '';
       }
     }
-
     final fromMessage = pick(message);
     if (fromMessage.isNotEmpty) return fromMessage;
-
     final persisted = _latestPersistedMessage(message);
     if (persisted == null) return '';
     return pick(persisted);
   }
 
-  /// Parse input data from raw message content (extracts images and documents).
   ChatInputData parseInputFromRaw(String raw) {
     final imgRe = RegExp(r"\[image:(.+?)\]");
     final fileRe = RegExp(r"\[file:(.+?)\|(.+?)\|(.+?)\]");
@@ -270,7 +239,6 @@ class MessageBuilderService {
         final mime = fileMatch.group(3)?.trim() ?? 'text/plain';
         final doc = DocumentAttachment(path: path, fileName: name, mime: mime);
         docs.add(doc);
-        // Treat media attachments as image-style attachments for downstream API builders.
         final effectiveMime = _effectiveAttachmentMime(doc);
         if ((isVideoMime(effectiveMime) || isAudioMime(effectiveMime)) &&
             path.isNotEmpty) {
@@ -293,9 +261,6 @@ class MessageBuilderService {
     return resolveDocumentAttachmentMime(attachment);
   }
 
-  /// Process user messages in apiMessages: extract documents, apply OCR, inject file prompts.
-  ///
-  /// Returns the image paths from the last user message (for API call).
   Future<List<String>> processUserMessagesForApi(
     List<Map<String, dynamic>> apiMessages,
     SettingsProvider settings,
@@ -305,10 +270,7 @@ class MessageBuilderService {
         settings.ocrEnabled &&
         settings.ocrModelProvider != null &&
         settings.ocrModelId != null;
-
     List<String>? lastUserImagePaths;
-
-    // Find last user message index
     int lastUserIdx = -1;
     for (int i = apiMessages.length - 1; i >= 0; i--) {
       if (apiMessages[i]['role'] == 'user') {
@@ -316,9 +278,7 @@ class MessageBuilderService {
         break;
       }
     }
-
     Future<String?> readDocument(DocumentAttachment d) async {
-      // Use file stat to detect content changes without hashing.
       FileStat? stat;
       try {
         stat = await File(d.path).stat();
@@ -338,7 +298,6 @@ class MessageBuilderService {
           path: d.path,
           mime: d.mime,
         );
-        // Cache only when stat is available; otherwise avoid staleness.
         if (stat != null) {
           _docTextCache[d.path] = _DocTextCacheEntry(
             text: text,
@@ -358,7 +317,6 @@ class MessageBuilderService {
         return null;
       }
     }
-
     for (int i = 0; i < apiMessages.length; i++) {
       if (apiMessages[i]['role'] != 'user') continue;
       final rawUser = (apiMessages[i]['content'] ?? '').toString();
@@ -371,7 +329,6 @@ class MessageBuilderService {
         for (final d in parsedUser.documents)
           if (isAudioMime(_effectiveAttachmentMime(d))) d.path.trim(),
       }..removeWhere((p) => p.isEmpty);
-
       final messageMediaPaths = parsedUser.imagePaths
           .map((p) => p.trim())
           .where(
@@ -388,14 +345,11 @@ class MessageBuilderService {
       } else {
         apiMessages[i][internalMediaPathsKey] = messageMediaPaths;
       }
-
-      // Capture image paths from last user message
       if (i == lastUserIdx &&
           lastUserImagePaths == null &&
           parsedUser.imagePaths.isNotEmpty) {
         lastUserImagePaths = List<String>.of(parsedUser.imagePaths);
       }
-
       final inlineImagePaths = parsedUser.imagePaths
           .map((p) => p.trim())
           .where(
@@ -405,20 +359,16 @@ class MessageBuilderService {
                 !audioPaths.contains(p),
           )
           .toList(growable: false);
-
-      // Apply replace-only regexes at send-time on user text (exclude markers).
       final replacedUserText = applyAssistantRegexes(
         parsedUser.text,
         assistant: assistant,
         scope: AssistantRegexScope.user,
         target: AssistantRegexTransformTarget.send,
       );
-
       final imageMarkers = (!ocrActive && inlineImagePaths.isNotEmpty)
           ? inlineImagePaths.map((p) => '\n[image:$p]').join()
           : '';
       final cleanedUser = (replacedUserText + imageMarkers).trim();
-
       final filePrompts = StringBuffer();
       for (final d in parsedUser.documents) {
         final effectiveMime = _effectiveAttachmentMime(d);
@@ -435,9 +385,7 @@ class MessageBuilderService {
         filePrompts.writeln('</content>');
         filePrompts.writeln();
       }
-
       String merged = (filePrompts.toString() + cleanedUser).trim();
-
       if (ocrActive && ocrHandler != null) {
         final ocrTargets = parsedUser.imagePaths
             .map((p) => p.trim())
@@ -459,11 +407,8 @@ class MessageBuilderService {
           }
         }
       }
-
       apiMessages[i]['content'] = merged.isEmpty ? cleanedUser : merged;
     }
-
-    // Apply message template to last user message
     if (lastUserIdx != -1) {
       final userText = (apiMessages[lastUserIdx]['content'] ?? '').toString();
       final templ =
@@ -478,11 +423,9 @@ class MessageBuilderService {
       );
       apiMessages[lastUserIdx]['content'] = templated;
     }
-
     return lastUserImagePaths ?? <String>[];
   }
 
-  /// Default OCR text wrapper
   String _defaultWrapOcrBlock(String ocrText) {
     final buf = StringBuffer();
     buf.writeln(
@@ -495,7 +438,6 @@ class MessageBuilderService {
     return buf.toString();
   }
 
-  /// Inject system prompt into apiMessages.
   void injectSystemPrompt(
     List<Map<String, dynamic>> apiMessages,
     Assistant? assistant,
@@ -517,7 +459,6 @@ class MessageBuilderService {
     }
   }
 
-  /// Inject memory prompts and recent chats reference into apiMessages.
   Future<void> injectMemoryAndRecentChats(
     List<Map<String, dynamic>> apiMessages,
     Assistant? assistant, {
@@ -543,26 +484,26 @@ class MessageBuilderService {
         buf.writeln('</memories>');
         buf.writeln('''
 ## Memory Tool
-你是一个无状态的大模型，你无法存储记忆，因此为了记住信息，你需要使用**记忆工具**。
-你可以使用 `create_memory`, `edit_memory`, `delete_memory` 工具创建、更新或删除记忆。
-- 如果记忆中没有相关信息，请使用 create_memory 创建一条新的记录。
-- 如果已有相关记录，请使用 edit_memory 更新内容。
-- 若记忆过时或无用，请使用 delete_memory 删除。
-这些记忆会自动包含在未来的对话上下文中，在<memories>标签内。
-请勿在记忆中存储敏感信息，敏感信息包括：用户的民族、宗教信仰、性取向、政治观点及党派归属、性生活、犯罪记录等。
-在与用户聊天过程中，你可以像一个私人秘书一样**主动的**记录用户相关的信息到记忆里，包括但不限于：
-- 用户昵称/姓名
-- 年龄/性别/兴趣爱好
-- 计划事项等
-- 聊天风格偏好
-- 工作相关
-- 首次聊天时间
+\u4f60\u662f\u4e00\u4e2a\u65e0\u72b6\u6001\u7684\u5927\u6a21\u578b\uff0c\u4f60\u65e0\u6cd5\u5b58\u50a8\u8bb0\u5fc6\uff0c\u56e0\u6b64\u4e3a\u4e86\u8bb0\u4f4f\u4fe1\u606f\uff0c\u4f60\u9700\u8981\u4f7f\u7528**\u8bb0\u5fc6\u5de5\u5177**\u3002
+\u4f60\u53ef\u4ee5\u4f7f\u7528 `create_memory`, `edit_memory`, `delete_memory` \u5de5\u5177\u521b\u5efa\u3001\u66f4\u65b0\u6216\u5220\u9664\u8bb0\u5fc6\u3002
+- \u5982\u679c\u8bb0\u5fc6\u4e2d\u6ca1\u6709\u76f8\u5173\u4fe1\u606f\uff0c\u8bf7\u4f7f\u7528 create_memory \u521b\u5efa\u4e00\u6761\u65b0\u7684\u8bb0\u5f55\u3002
+- \u5982\u679c\u5df2\u6709\u76f8\u5173\u8bb0\u5f55\uff0c\u8bf7\u4f7f\u7528 edit_memory \u66f4\u65b0\u5185\u5bb9\u3002
+- \u82e5\u8bb0\u5fc6\u8fc7\u65f6\u6216\u65e0\u7528\uff0c\u8bf7\u4f7f\u7528 delete_memory \u5220\u9664\u3002
+\u8fd9\u4e9b\u8bb0\u5fc6\u4f1a\u81ea\u52a8\u5305\u542b\u5728\u672a\u6765\u7684\u5bf9\u8bdd\u4e0a\u4e0b\u6587\u4e2d\uff0c\u5728<memories>\u6807\u7b7e\u5185\u3002
+\u8bf7\u52ff\u5728\u8bb0\u5fc6\u4e2d\u5b58\u50a8\u654f\u611f\u4fe1\u606f\uff0c\u654f\u611f\u4fe1\u606f\u5305\u62ec\uff1a\u7528\u6237\u7684\u6c11\u65cf\u3001\u5b97\u6559\u4fe1\u4ef0\u3001\u6027\u53d6\u5411\u3001\u653f\u6cbb\u89c2\u70b9\u53ca\u515a\u6d3e\u5f52\u5c5e\u3001\u6027\u751f\u6d3b\u3001\u72af\u7f6a\u8bb0\u5f55\u7b49\u3002
+\u5728\u4e0e\u7528\u6237\u804a\u5929\u8fc7\u7a0b\u4e2d\uff0c\u4f60\u53ef\u4ee5\u50cf\u4e00\u4e2a\u79c1\u4eba\u79d8\u4e66\u4e00\u6837**\u4e3b\u52a8\u7684**\u8bb0\u5f55\u7528\u6237\u76f8\u5173\u7684\u4fe1\u606f\u5230\u8bb0\u5fc6\u91cc\uff0c\u5305\u62ec\u4f46\u4e0d\u9650\u4e8e\uff1a
+- \u7528\u6237\u6635\u79f0/\u59d3\u540d
+- \u5e74\u9f84/\u6027\u522b/\u5174\u8da3\u7231\u597d
+- \u8ba1\u5212\u4e8b\u9879\u7b49
+- \u804a\u5929\u98ce\u683c\u504f\u597d
+- \u5de5\u4f5c\u76f8\u5173
+- \u9996\u6b21\u804a\u5929\u65f6\u95f4
 - ...
-请主动调用工具记录，而不是需要用户要求。
-记忆如果包含日期信息，请包含在内，请使用绝对时间格式，并且当前时间是 ${DateTime.now().toIso8601String()}。
-无需告知用户你已更改记忆记录，也不要在对话中直接显示记忆内容，除非用户主动要求。
-相似或相关的记忆应合并为一条记录，而不要重复记录，过时记录应删除。
-你可以在和用户闲聊的时候暗示用户你能记住东西。
+\u8bf7\u4e3b\u52a8\u8c03\u7528\u5de5\u5177\u8bb0\u5f55\uff0c\u800c\u4e0d\u662f\u9700\u8981\u7528\u6237\u8981\u6c42\u3002
+\u8bb0\u5fc6\u5982\u679c\u5305\u542b\u65e5\u671f\u4fe1\u606f\uff0c\u8bf7\u5305\u542b\u5728\u5185\uff0c\u8bf7\u4f7f\u7528\u7edd\u5bf9\u65f6\u95f4\u683c\u5f0f\uff0c\u5e76\u4e14\u5f53\u524d\u65f6\u95f4\u662f ${DateTime.now().toIso8601String()}\u3002
+\u65e0\u9700\u544a\u77e5\u7528\u6237\u4f60\u5df2\u66f4\u6539\u8bb0\u5fc6\u8bb0\u5f55\uff0c\u4e5f\u4e0d\u8981\u5728\u5bf9\u8bdd\u4e2d\u76f4\u63a5\u663e\u793a\u8bb0\u5fc6\u5185\u5bb9\uff0c\u9664\u975e\u7528\u6237\u4e3b\u52a8\u8981\u6c42\u3002
+\u76f8\u4f3c\u6216\u76f8\u5173\u7684\u8bb0\u5fc6\u5e94\u5408\u5e76\u4e3a\u4e00\u6761\u8bb0\u5f55\uff0c\u800c\u4e0d\u8981\u91cd\u590d\u8bb0\u5f55\uff0c\u8fc7\u65f6\u8bb0\u5f55\u5e94\u5220\u9664\u3002
+\u4f60\u53ef\u4ee5\u5728\u548c\u7528\u6237\u95f2\u804a\u7684\u65f6\u5019\u6697\u793a\u7528\u6237\u4f60\u80fd\u8bb0\u4f4f\u4e1c\u897f\u3002
 ''');
         _appendToSystemMessage(apiMessages, buf.toString());
       }
@@ -580,10 +521,9 @@ class MessageBuilderService {
         if (relevantChats.isNotEmpty) {
           final sb = StringBuffer();
           sb.writeln('<recent_chats>');
-          sb.writeln('这是用户最近的一些对话标题和摘要，你可以参考这些内容了解用户偏好和关注点');
+          sb.writeln('\u8fd9\u662f\u7528\u6237\u6700\u8fd1\u7684\u4e00\u4e9b\u5bf9\u8bdd\u6807\u9898\u548c\u6458\u8981\uff0c\u4f60\u53ef\u4ee5\u53c2\u8003\u8fd9\u4e9b\u5185\u5bb9\u4e86\u89e3\u7528\u6237\u504f\u597d\u548c\u5173\u6ce8\u70b9');
           for (final c in relevantChats) {
             sb.writeln('<conversation>');
-            // Format: timestamp: title || summary
             final timestamp = c.updatedAt.toIso8601String().substring(0, 10);
             final title = c.title.trim();
             final summary = (c.summary ?? '').trim();
@@ -601,7 +541,6 @@ class MessageBuilderService {
     } catch (_) {}
   }
 
-  /// Inject search tool usage prompt into apiMessages.
   void injectSearchPrompt(
     List<Map<String, dynamic>> apiMessages,
     SettingsProvider settings,
@@ -613,7 +552,6 @@ class MessageBuilderService {
     }
   }
 
-  /// Inject instruction injection prompts into apiMessages.
   Future<void> injectInstructionPrompts(
     List<Map<String, dynamic>> apiMessages,
     String? assistantId,
@@ -644,7 +582,40 @@ class MessageBuilderService {
     } catch (_) {}
   }
 
-  /// Inject world book (lorebook) entries into apiMessages.
+  /// Inject agent work (checklist/timer) system prompt for assistants
+  /// that have memory/agent-work capabilities enabled.
+  Future<void> injectAgentWorkPrompt(
+    List<Map<String, dynamic>> apiMessages,
+    String? assistantId,
+  ) async {
+    if (assistantId == null) return;
+    try {
+      final ap = contextProvider.read<AssistantProvider>();
+      final assistant = ap.getById(assistantId);
+      if (assistant == null) return;
+      // Agent work prompts are injected when memory (agent capability flag) is enabled
+      if (assistant.enableMemory) {
+        final buf = StringBuffer();
+        buf.writeln('<active_instruction_injections>');
+        buf.writeln('You have access to checklist and timer tools.');
+        buf.writeln();
+        buf.writeln('Rules:');
+        buf.writeln('1. Use checklists to track multi-step tasks.');
+        buf.writeln('2. Do not mark an item completed directly.');
+        buf.writeln('3. Submit verification results instead.');
+        buf.writeln('4. An item is completed only after the system records '
+            'the required number of consecutive clean verification passes.');
+        buf.writeln('5. When setting a timer, provide a clear prompt that '
+            'can be sent back to you later.');
+        buf.writeln('6. Treat shared checklists according to access permissions.');
+        buf.writeln('7. When blocked, mark the item blocked and explain the blocker.');
+        buf.writeln('8. Include evidence references whenever possible.');
+        buf.writeln('</active_instruction_injections>');
+        _appendToSystemMessage(apiMessages, buf.toString());
+      }
+    } catch (_) {}
+  }
+
   Future<void> injectWorldBookPrompts(
     List<Map<String, dynamic>> apiMessages,
     String? assistantId,
@@ -699,11 +670,9 @@ class MessageBuilderService {
         if (!entry.enabled) return false;
         if (entry.constantActive) return true;
         if (entry.keywords.isEmpty) return false;
-
         for (final raw in entry.keywords) {
           final keyword = raw.trim();
           if (keyword.isEmpty) continue;
-
           if (entry.useRegex) {
             try {
               final re = RegExp(keyword, caseSensitive: entry.caseSensitive);
@@ -768,7 +737,6 @@ class MessageBuilderService {
           if (e.content.trim().isEmpty) continue;
           byRole.putIfAbsent(e.role, () => <WorldBookEntry>[]).add(e);
         }
-
         final result = <Map<String, dynamic>>[];
         for (final role in byRole.keys) {
           final group = byRole[role]!;
@@ -800,7 +768,6 @@ class MessageBuilderService {
             .add(t.entry);
       }
 
-      // BEFORE/AFTER_SYSTEM_PROMPT: merge into system message.
       final beforeContent = joinContents(
         byPosition[WorldBookInjectionPosition.beforeSystemPrompt] ??
             const <WorldBookEntry>[],
@@ -841,7 +808,6 @@ class MessageBuilderService {
         }
       }
 
-      // TOP_OF_CHAT: insert before first user message.
       final topInjections = byPosition[WorldBookInjectionPosition.topOfChat];
       if (topInjections != null && topInjections.isNotEmpty) {
         var insertIndex = apiMessages.indexWhere(
@@ -855,7 +821,6 @@ class MessageBuilderService {
         );
       }
 
-      // BOTTOM_OF_CHAT: insert before last message.
       final bottomInjections =
           byPosition[WorldBookInjectionPosition.bottomOfChat];
       if (bottomInjections != null && bottomInjections.isNotEmpty) {
@@ -867,7 +832,6 @@ class MessageBuilderService {
         );
       }
 
-      // AT_DEPTH: insert at depth from end (depth=1 means before last message).
       final atDepthInjections = byPosition[WorldBookInjectionPosition.atDepth];
       if (atDepthInjections != null && atDepthInjections.isNotEmpty) {
         final byDepth = <int, List<WorldBookEntry>>{};
@@ -877,10 +841,8 @@ class MessageBuilderService {
               .toInt();
           byDepth.putIfAbsent(depth, () => <WorldBookEntry>[]).add(e);
         }
-
         final depths = byDepth.keys.toList(growable: false)
           ..sort((a, b) => b.compareTo(a));
-
         for (final depth in depths) {
           final injections = byDepth[depth] ?? const <WorldBookEntry>[];
           var insertIndex = (apiMessages.length - depth).clamp(
@@ -897,7 +859,6 @@ class MessageBuilderService {
     } catch (_) {}
   }
 
-  /// Helper to append content to the system message (or create one if missing).
   void _appendToSystemMessage(
     List<Map<String, dynamic>> apiMessages,
     String content,
@@ -910,7 +871,6 @@ class MessageBuilderService {
     }
   }
 
-  /// Apply context message limit based on assistant settings.
   void applyContextLimit(
     List<Map<String, dynamic>> apiMessages,
     Assistant? assistant,
@@ -932,7 +892,6 @@ class MessageBuilderService {
           ..removeRange(startIdx, apiMessages.length)
           ..addAll(trimmed);
       }
-      // Context trimming can cut in the middle of a tool-call triplet; avoid sending dangling tool messages.
       while (apiMessages.length > startIdx &&
           (apiMessages[startIdx]['role'] ?? '').toString() == 'tool') {
         apiMessages.removeAt(startIdx);
@@ -940,7 +899,6 @@ class MessageBuilderService {
     }
   }
 
-  /// Convert local Markdown image links to inline base64 for model context.
   Future<void> inlineLocalImages(List<Map<String, dynamic>> apiMessages) async {
     for (int i = 0; i < apiMessages.length; i++) {
       final s = (apiMessages[i]['content'] ?? '').toString();
@@ -951,7 +909,6 @@ class MessageBuilderService {
     }
   }
 
-  /// Check if built-in search is enabled for the given provider/model.
   bool hasBuiltInSearch(
     SettingsProvider settings,
     String providerKey,
