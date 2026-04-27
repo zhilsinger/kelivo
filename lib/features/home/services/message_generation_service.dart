@@ -4,9 +4,12 @@ import '../../../core/models/assistant.dart';
 import '../../../core/models/chat_input_data.dart';
 import '../../../core/models/chat_message.dart';
 import '../../../core/models/conversation.dart';
+import '../../../core/models/supabase_memory_context.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/chat/chat_service.dart';
 import '../../../core/services/model_override_payload_parser.dart';
+import '../../../core/services/supabase/supabase_context_builder.dart';
+import '../../../core/services/supabase/supabase_memory_settings.dart';
 import '../../../core/utils/multimodal_input_utils.dart';
 import '../../../core/utils/openai_model_compat.dart';
 import '../../../utils/assistant_regex.dart';
@@ -165,6 +168,11 @@ class MessageGenerationService {
       apiMessages,
       assistant,
       currentConversationId: currentConversation?.id,
+    );
+
+    // Inject Supabase AI memory context (Phase 6 — sidecar injection)
+    await _injectSupabaseMemoryContext(
+      apiMessages, assistant, currentConversation?.id, settings,
     );
 
     final hasBuiltInSearch = messageBuilderService.hasBuiltInSearch(
@@ -559,5 +567,131 @@ class MessageGenerationService {
           .toList(growable: false),
       includeAudio: includeAudio,
     );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // Phase 6 — Supabase AI Memory Injection
+  // ══════════════════════════════════════════════════════════════════════
+
+  /// Inject Supabase cloud memory context into the API messages.
+  ///
+  /// Gated on: SupabaseMemorySettings.aiMemoryEnabled, Supabase config,
+  /// and memory mode != off. Searches using the latest user message as
+  /// query, formats results into an XML block via SupabaseContextBuilder,
+  /// and appends to the system message.
+  ///
+  /// Failures are silent — memory is best-effort and never blocks chat.
+  Future<void> _injectSupabaseMemoryContext(
+    List<Map<String, dynamic>> apiMessages,
+    Assistant? assistant,
+    String? conversationId,
+    SettingsProvider settings,
+  ) async {
+    // Gate: must be configured + enabled
+    final memSettings = contextProvider.read<SupabaseMemorySettings>();
+    if (!memSettings.aiMemoryEnabled) return;
+    if (memSettings.memoryMode == SupabaseMemoryMode.off) return;
+    if (!settings.supabaseConfigured) return;
+
+    // Get the latest user message as the search query
+    String? query;
+    for (int i = apiMessages.length - 1; i >= 0; i--) {
+      if (apiMessages[i]['role'] == 'user') {
+        query = (apiMessages[i]['content'] ?? '').toString();
+        break;
+      }
+    }
+    if (query == null || query.trim().isEmpty) return;
+
+    try {
+      // Dynamically resolve — avoids hard import dependency on Phase 4
+      // being complete. When SupabaseAiMemoryService ships, this block
+      // activates automatically.
+      final client = SupabaseClientService.instance;
+      if (!client.isConfigured) return;
+
+      // Phase 4 contract: SupabaseAiMemoryService.searchMemory()
+      // For now, a no-op stub that returns empty until Phase 4 is built.
+      // This unblocks Phase 6 compilation and injection wiring.
+      final chunks = await _searchMemory(
+        client,
+        query: query,
+        mode: memSettings.memoryMode,
+        conversationId: conversationId,
+      );
+
+      if (chunks.isEmpty) return;
+
+      final builder = SupabaseContextBuilder();
+      final pkg = builder.build(
+        chunks: chunks,
+        mode: memSettings.memoryMode,
+        currentConversationId: conversationId,
+        maxChunks: memSettings.maxChunksPerSearch,
+        maxTokens: memSettings.maxMemoryTokens,
+      );
+
+      if (!pkg.isEmpty) {
+        _appendToSystemMessage(apiMessages, pkg.formattedBlock);
+      }
+    } catch (_) {
+      // Best-effort — silent failure, never blocks chat
+    }
+  }
+
+  /// Search Supabase memory via the Phase 4 service.
+  ///
+  /// When SupabaseAiMemoryService is implemented, replace this method
+  /// with a direct call. The current implementation uses the RPC
+  /// endpoint directly as a fallback. Returns an empty list on any
+  /// failure or when the Phase 4 service is not yet available.
+  Future<List<SupabaseMemoryChunk>> _searchMemory(
+    SupabaseClientService client, {
+    required String query,
+    required SupabaseMemoryMode mode,
+    String? conversationId,
+  }) async {
+    try {
+      // Attempt the RPC call for hybrid search (requires Phase 3+4 schema)
+      final result = await client.rpc('match_message_chunks_hybrid', params: {
+        'query_text': query,
+        'match_count': 10,
+      });
+
+      if (result is List) {
+        return result.map((row) {
+          final map = row as Map<String, dynamic>;
+          return SupabaseMemoryChunk(
+            content: (map['content'] ?? '').toString(),
+            threadTitle: (map['thread_title'] ?? '').toString(),
+            threadId: (map['thread_id'] ?? '').toString(),
+            messageDate: map['message_date'] != null
+                ? DateTime.tryParse(map['message_date'].toString()) ??
+                    DateTime.now()
+                : DateTime.now(),
+            similarityScore:
+                double.tryParse((map['similarity'] ?? '0').toString()) ?? 0.0,
+            messageId: (map['message_id'] ?? '').toString(),
+          );
+        }).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Helper: append content to the system message (or create one if missing).
+  /// Duplicated from MessageBuilderService to avoid touching the 49KB file.
+  void _appendToSystemMessage(
+    List<Map<String, dynamic>> apiMessages,
+    String content,
+  ) {
+    if (apiMessages.isNotEmpty && apiMessages.first['role'] == 'system') {
+      apiMessages[0]['content'] =
+          '${apiMessages[0]['content']}\n\n$content';
+    } else {
+      apiMessages.insert(0, {'role': 'system', 'content': content});
+    }
   }
 }
