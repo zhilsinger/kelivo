@@ -231,7 +231,8 @@ class TimerToolService {
       if (active.isNotEmpty) sb.writeln();
       sb.writeln('Missed timers:');
       for (final t in missed) {
-        sb.writeln('- ${t.title} (id: ${t.id}, was due at ${t.dueAt.toIso8601String()})');
+        sb.writeln(
+            '- ${t.title} (id: ${t.id}, was due at ${t.dueAt.toIso8601String()})');
       }
     }
     return sb.toString().trim();
@@ -239,9 +240,14 @@ class TimerToolService {
 
   Future<String> _handleCancelTimer(Map<String, dynamic> args) async {
     final timerId = args['timer_id'] as String;
-    // Check if timer exists
     final all = await _timerService.getAllTimers();
-    final job = all.where((t) => t.id == timerId).firstOrNull;
+    AgentTimerJob? job;
+    for (final t in all) {
+      if (t.id == timerId) {
+        job = t;
+        break;
+      }
+    }
     if (job == null) return 'Timer $timerId not found';
     if (job.status == TimerStatus.cancelled) {
       return 'Timer ${job.title} (id: $timerId) is already cancelled';
@@ -254,7 +260,13 @@ class TimerToolService {
   Future<String> _handleGetTimerStatus(Map<String, dynamic> args) async {
     final timerId = args['timer_id'] as String;
     final all = await _timerService.getAllTimers();
-    final job = all.where((t) => t.id == timerId).firstOrNull;
+    AgentTimerJob? job;
+    for (final t in all) {
+      if (t.id == timerId) {
+        job = t;
+        break;
+      }
+    }
     if (job == null) return 'Timer $timerId not found';
 
     final remaining = job.dueAt.difference(DateTime.now());
