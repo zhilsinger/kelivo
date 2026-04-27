@@ -140,4 +140,19 @@ class Conversation extends HiveObject {
           json['lastSummarizedMessageCount'] as int? ?? 0,
     );
   }
+
+  // ===== Supabase Sync =====
+
+  /// Map this conversation to Supabase threads table format.
+  Map<String, dynamic> toSupabaseJson({required String userId}) => {
+    'id': id,
+    'user_id': userId,
+    'title': title,
+    'source': 'kelivo',
+    'model_name': null,
+    'created_at': createdAt.toUtc().toIso8601String(),
+    'updated_at': updatedAt.toUtc().toIso8601String(),
+    'allow_ai_memory': true,
+    'privacy_level': 'normal',
+  };
 }
