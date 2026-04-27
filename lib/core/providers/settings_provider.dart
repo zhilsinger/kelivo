@@ -247,6 +247,7 @@ class SettingsProvider extends ChangeNotifier {
   static const String _supabaseAutoSyncEnabledKey = 'supabase_auto_sync_v1';
   static const String _supabaseAiMemoryEnabledKey = 'supabase_ai_memory_v1';
   static const String _supabaseBucketNameKey = 'supabase_bucket_name_v1';
+  static const String _supabaseWifiOnlyKey = 'supabase_wifi_only_v1';
 
   // ===== Network TTS services =====
   List<TtsServiceOptions> _ttsServices = const <TtsServiceOptions>[];
@@ -335,6 +336,7 @@ class SettingsProvider extends ChangeNotifier {
   bool _supabaseAutoSyncEnabled = false;
   bool _supabaseAiMemoryEnabled = false;
   String _supabaseBucketName = 'kelivo-backups';
+  bool _supabaseWifiOnly = false;
 
   String get supabaseUrl => _supabaseUrl;
   String get supabaseAnonKey => _supabaseAnonKey;
@@ -344,6 +346,7 @@ class SettingsProvider extends ChangeNotifier {
   bool get supabaseAutoSyncEnabled => _supabaseAutoSyncEnabled;
   bool get supabaseAiMemoryEnabled => _supabaseAiMemoryEnabled;
   String get supabaseBucketName => _supabaseBucketName;
+  bool get supabaseWifiOnly => _supabaseWifiOnly;
 
   Map<String, ProviderConfig> _providerConfigs = {};
   Map<String, ProviderConfig> get providerConfigs =>
@@ -533,6 +536,7 @@ class SettingsProvider extends ChangeNotifier {
         prefs.getBool(_supabaseAiMemoryEnabledKey) ?? false;
     _supabaseBucketName =
         prefs.getString(_supabaseBucketNameKey) ?? 'kelivo-backups';
+    _supabaseWifiOnly = prefs.getBool(_supabaseWifiOnlyKey) ?? false;
     var providerConfigsLoaded = false;
     final cfgStr = prefs.getString(_providerConfigsKey);
     if (cfgStr != null && cfgStr.isNotEmpty) {
@@ -583,6 +587,7 @@ class SettingsProvider extends ChangeNotifier {
     _supabaseAnonKey = '';
     _supabaseAutoSyncEnabled = false;
     _supabaseAiMemoryEnabled = false;
+    _supabaseWifiOnly = false;
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_supabaseUrlKey);
@@ -608,6 +613,13 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_supabaseBucketNameKey, _supabaseBucketName);
+  }
+
+  Future<void> setSupabaseWifiOnly(bool v) async {
+    _supabaseWifiOnly = v;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_supabaseWifiOnlyKey, v);
   }
 
   // ===== NOTE: This is a compressed version. The full ~4110-line file from master
