@@ -1,11 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 import '../../../core/models/chat_input_data.dart';
 import '../../../core/models/assistant.dart';
 import '../../../core/models/chat_message.dart';
 import '../../../core/models/conversation.dart';
+import '../../../core/models/prompt_queue_item.dart';
 import '../../../core/providers/assistant_provider.dart';
+import '../../../core/providers/prompt_queue_provider.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/api/chat_api_service.dart';
 import '../../../core/services/chat/chat_service.dart';
@@ -84,7 +87,6 @@ class HomeViewModel extends ChangeNotifier {
   final ChatController _chatController;
   final BuildContext _contextProvider;
   late final ChatActions _chatActions;
-  QueuedChatInput? _queuedInput;
   bool _isDrainingQueuedInput = false;
 
   /// Function to get localized title
@@ -116,6 +118,10 @@ class HomeViewModel extends ChangeNotifier {
   /// Called when conversation is successfully switched (for animations).
   VoidCallback? onConversationSwitched;
 
+  /// Gets the prompt queue provider from the widget tree.
+  PromptQueueProvider get _queueProvider =>
+      _contextProvider.read<PromptQueueProvider>();
+
   // ============================================================================
   // State Getters (delegate to ChatController)
   // ============================================================================
@@ -141,13 +147,12 @@ class HomeViewModel extends ChangeNotifier {
   bool get isCurrentConversationLoading =>
       _chatController.isCurrentConversationLoading;
 
-  QueuedChatInput? get currentQueuedInput {
+  /// The first item in the current conversation's queue, or null.
+  PromptQueueItem? get currentQueuedInput {
     final cid = currentConversation?.id;
-    final queued = _queuedInput;
-    if (cid == null || queued == null || queued.conversationId != cid) {
-      return null;
-    }
-    return queued;
+    if (cid == null) return null;
+    final queue = _queueProvider.getQueue(cid);
+    return queue.isNotEmpty ? queue.first : null;
   }
 
   final ValueNotifier<bool> isProcessingFiles = ValueNotifier<bool>(false);
@@ -235,12 +240,16 @@ class HomeViewModel extends ChangeNotifier {
 
     final activeConversation = currentConversation!;
     if (_chatController.isConversationLoading(activeConversation.id)) {
-      if (_queuedInput != null) {
-        return ChatInputSubmissionResult.rejected;
-      }
-      _queuedInput = QueuedChatInput(
-        conversationId: activeConversation.id,
-        input: _cloneInput(input),
+      await _queueProvider.enqueue(
+        activeConversation.id,
+        PromptQueueItem(
+          id: const Uuid().v4(),
+          conversationId: activeConversation.id,
+          input: _cloneInput(input),
+          source: QueueItemSource.user,
+          createdAt: DateTime.now(),
+          order: _queueProvider.getQueueLength(activeConversation.id),
+        ),
       );
       notifyListeners();
       return ChatInputSubmissionResult.queued;
@@ -252,12 +261,10 @@ class HomeViewModel extends ChangeNotifier {
         : ChatInputSubmissionResult.rejected;
   }
 
+  /// Cancel the queued input. With a multi-item queue, this returns null;
+  /// the caller (HomePageController) opens the queue panel instead.
   ChatInputData? cancelCurrentQueuedInput() {
-    final queued = currentQueuedInput;
-    if (queued == null || _isDrainingQueuedInput) return null;
-    _queuedInput = null;
-    notifyListeners();
-    return _cloneInput(queued.input);
+    return null;
   }
 
   Future<bool> _sendMessageToConversation(
@@ -306,25 +313,31 @@ class HomeViewModel extends ChangeNotifier {
     );
   }
 
+  /// Drain one queued item from the provider queue.
+  /// The next item drains when the resulting generation finishes and
+  /// [_onLoadingChanged] triggers this method again.
   Future<void> _drainQueuedInputIfReady(String conversationId) async {
     if (_isDrainingQueuedInput) return;
-    final queued = _queuedInput;
     final conversation = currentConversation;
-    if (queued == null || conversation == null) return;
-    if (queued.conversationId != conversationId ||
-        conversation.id != conversationId) {
-      return;
-    }
+    if (conversation == null || conversation.id != conversationId) return;
     if (_chatController.isConversationLoading(conversationId)) return;
+    if (!_queueProvider.hasItems(conversationId)) return;
 
     _isDrainingQueuedInput = true;
-    _queuedInput = null;
-    notifyListeners();
 
-    final input = queued.input;
-    final success = await _sendMessageToConversation(input, conversation);
-    if (!success) {
-      _queuedInput = queued;
+    final next = await _queueProvider.popNext(conversationId);
+    if (next != null) {
+      notifyListeners();
+      final success = await _sendMessageToConversation(
+        next.input,
+        conversation,
+      );
+      if (!success) {
+        await _queueProvider.enqueue(
+          conversationId,
+          next.copyWith(order: 0),
+        );
+      }
     }
 
     _isDrainingQueuedInput = false;
