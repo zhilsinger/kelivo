@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +13,7 @@ import '../../../core/services/haptics.dart';
 import '../../../core/models/backup.dart';
 import '../../../core/providers/backup_provider.dart';
 import '../../../core/providers/s3_backup_provider.dart';
+import '../../../core/providers/supabase_backup_provider.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/chat/chat_service.dart';
 import '../../../core/services/native_file_save.dart';
@@ -42,6 +43,7 @@ class BackupPage extends StatefulWidget {
 class _BackupPageState extends State<BackupPage> {
   List<BackupFileItem> _remote = const <BackupFileItem>[];
   List<BackupFileItem> _remoteS3 = const <BackupFileItem>[];
+  List<BackupFileItem> _remoteSupabase = const <BackupFileItem>[];
 
   Future<bool?> _confirmCherryImport(BuildContext context) async {
     final l10n = AppLocalizations.of(context)!;
@@ -94,11 +96,6 @@ class _BackupPageState extends State<BackupPage> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Padding(
-                    //   padding: const EdgeInsets.only(top: 2),
-                    //   child: Icon(Lucide.BadgeInfo, size: 18, color: cs.primary),
-                    // ),
-                    // const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         body,
@@ -233,13 +230,21 @@ class _BackupPageState extends State<BackupPage> {
             initialConfig: settings.s3Config,
           ),
         ),
+        ChangeNotifierProvider(
+          create: (_) => SupabaseBackupProvider(
+            chatService: context.read<ChatService>(),
+            initialConfig: settings.supabaseBackupConfig,
+          ),
+        ),
       ],
       child: Builder(
         builder: (context) {
           final vm = context.watch<BackupProvider>();
           final s3Vm = context.watch<S3BackupProvider>();
+          final supabaseVm = context.watch<SupabaseBackupProvider>();
           final cfg = vm.config;
           final s3Cfg = s3Vm.config;
+          final supabaseCfg = supabaseVm.config;
 
           // iOS-style section header
           Widget header(String text, {bool first = false}) => Padding(
@@ -271,7 +276,7 @@ class _BackupPageState extends State<BackupPage> {
             body: ListView(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
               children: [
-                // Section 1: 备份管理
+                // Section 1: Backup Management
                 header(l10n.backupPageBackupManagement, first: true),
                 _iosSectionCard(
                   children: [
@@ -288,6 +293,10 @@ class _BackupPageState extends State<BackupPage> {
                         final newS3Cfg = s3Cfg.copyWith(includeChats: v);
                         await settings.setS3Config(newS3Cfg);
                         s3Vm.updateConfig(newS3Cfg);
+
+                        final newSupabaseCfg = supabaseCfg.copyWith(includeChats: v);
+                        await settings.setSupabaseBackupConfig(newSupabaseCfg);
+                        supabaseVm.updateConfig(newSupabaseCfg);
                       },
                     ),
                     _iosDivider(context),
@@ -304,12 +313,16 @@ class _BackupPageState extends State<BackupPage> {
                         final newS3Cfg = s3Cfg.copyWith(includeFiles: v);
                         await settings.setS3Config(newS3Cfg);
                         s3Vm.updateConfig(newS3Cfg);
+
+                        final newSupabaseCfg = supabaseCfg.copyWith(includeFiles: v);
+                        await settings.setSupabaseBackupConfig(newSupabaseCfg);
+                        supabaseVm.updateConfig(newSupabaseCfg);
                       },
                     ),
                   ],
                 ),
 
-                // Section 2: WebDAV备份
+                // Section 2: WebDAV Backup
                 header(l10n.backupPageWebDavBackup),
                 _iosSectionCard(
                   children: [
@@ -354,21 +367,17 @@ class _BackupPageState extends State<BackupPage> {
                                 context,
                                 () => vm.listRemote(),
                               );
-                              // 按时间倒序排列（最新的在前）
                               list.sort((a, b) {
-                                // 优先使用 lastModified
                                 if (a.lastModified != null &&
                                     b.lastModified != null) {
                                   return b.lastModified!.compareTo(
                                     a.lastModified!,
                                   );
                                 }
-                                // 如果都没有 lastModified，按文件名倒序（文件名通常包含时间戳）
                                 if (a.lastModified == null &&
                                     b.lastModified == null) {
                                   return b.displayName.compareTo(a.displayName);
                                 }
-                                // 有 lastModified 的排在前面
                                 if (a.lastModified == null) return 1;
                                 return -1;
                               });
@@ -421,12 +430,10 @@ class _BackupPageState extends State<BackupPage> {
 
                                     if (confirm != true) return;
 
-                                    // 1. Close current sheet
                                     if (context.mounted) {
                                       Navigator.of(context).pop();
                                     }
 
-                                    // 2. Show loading dialog
                                     if (context.mounted) {
                                       showDialog(
                                         context: context,
@@ -441,7 +448,6 @@ class _BackupPageState extends State<BackupPage> {
                                         item,
                                       );
 
-                                      // Close loading dialog
                                       if (context.mounted) {
                                         Navigator.of(
                                           context,
@@ -449,7 +455,6 @@ class _BackupPageState extends State<BackupPage> {
                                         ).pop();
                                       }
 
-                                      // Sort list
                                       list.sort((a, b) {
                                         if (a.lastModified != null &&
                                             b.lastModified != null) {
@@ -473,7 +478,6 @@ class _BackupPageState extends State<BackupPage> {
 
                                       if (!context.mounted) return;
 
-                                      // Re-open the sheet by calling the same logic again.
                                       await showModalBottomSheet(
                                         context: context,
                                         isScrollControlled: true,
@@ -487,7 +491,6 @@ class _BackupPageState extends State<BackupPage> {
                                           items: _remote,
                                           loading: false,
                                           onDelete: (item) async {
-                                            // Simplified recursive delete logic for subsequent deletions
                                             final confirm = await showDialog<bool>(
                                               context: context,
                                               builder: (dctx) => AlertDialog(
@@ -644,7 +647,6 @@ class _BackupPageState extends State<BackupPage> {
                                         ),
                                       );
                                     } catch (e) {
-                                      // If error, ensure loading dialog is closed
                                       if (context.mounted &&
                                           Navigator.canPop(context)) {
                                         Navigator.of(
@@ -751,7 +753,7 @@ class _BackupPageState extends State<BackupPage> {
                   ],
                 ),
 
-                // Section 3: S3 备份
+                // Section 3: S3 Backup
                 header(l10n.backupPageS3Backup),
                 _iosSectionCard(
                   children: [
@@ -1175,7 +1177,392 @@ class _BackupPageState extends State<BackupPage> {
                   ],
                 ),
 
-                // Section 4: 本地备份
+                // Section 4: Supabase Backup
+                header(l10n.backupPageSupabaseBackup),
+                _iosSectionCard(
+                  children: [
+                    _iosNavRow(
+                      context,
+                      icon: Lucide.Settings,
+                      label: l10n.backupPageSupabaseSettings,
+                      onTap: () => _showSupabaseSettingsSheet(
+                        context, settings, supabaseVm, supabaseCfg,
+                      ),
+                    ),
+                    _iosDivider(context),
+                    _iosNavRow(
+                      context,
+                      icon: Lucide.Cable,
+                      label: l10n.backupPageTestConnection,
+                      onTap: supabaseVm.busy
+                          ? null
+                          : () async {
+                              await supabaseVm.test();
+                              if (!context.mounted) return;
+                              final rawMessage = supabaseVm.message;
+                              final message =
+                                  rawMessage == 'OK'
+                                  ? l10n.backupPageSupabaseTestSuccess
+                                  : (rawMessage ?? l10n.backupPageTestDone);
+                              showAppSnackBar(
+                                context,
+                                message: message,
+                                type: rawMessage != null && rawMessage != 'OK'
+                                    ? NotificationType.error
+                                    : NotificationType.success,
+                              );
+                            },
+                    ),
+                    _iosDivider(context),
+                    _iosNavRow(
+                      context,
+                      icon: Lucide.Import,
+                      label: l10n.backupPageRestore,
+                      onTap: supabaseVm.busy
+                          ? null
+                          : () async {
+                              List<BackupFileItem> list;
+                              try {
+                                list = await _runWithImportingOverlay(
+                                  context,
+                                  () => supabaseVm.listRemote(),
+                                );
+                              } catch (e) {
+                                if (!context.mounted) return;
+                                showAppSnackBar(
+                                  context,
+                                  message: l10n.backupPageSupabaseListFailed(
+                                    e.toString(),
+                                  ),
+                                  type: NotificationType.error,
+                                );
+                                return;
+                              }
+                              list.sort((a, b) {
+                                if (a.lastModified != null &&
+                                    b.lastModified != null) {
+                                  return b.lastModified!.compareTo(
+                                    a.lastModified!,
+                                  );
+                                }
+                                if (a.lastModified == null &&
+                                    b.lastModified == null) {
+                                  return b.displayName.compareTo(a.displayName);
+                                }
+                                if (a.lastModified == null) return 1;
+                                return -1;
+                              });
+                              setState(() => _remoteSupabase = list);
+
+                              if (!context.mounted) return;
+                              await showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: cs.surface,
+                                shape: const RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.vertical(
+                                    top: Radius.circular(16),
+                                  ),
+                                ),
+                                builder: (ctx) => _RemoteListSheet(
+                                  items: _remoteSupabase,
+                                  loading: false,
+                                  onDelete: (item) async {
+                                    final confirm = await showDialog<bool>(
+                                      context: context,
+                                      builder: (dctx) => AlertDialog(
+                                        title: Text(
+                                          l10n.backupPageDeleteConfirmTitle,
+                                        ),
+                                        content: Text(
+                                          l10n.backupPageDeleteConfirmContent(
+                                            item.displayName,
+                                          ),
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.of(dctx).pop(false),
+                                            child: Text(l10n.backupPageCancel),
+                                          ),
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.of(dctx).pop(true),
+                                            style: TextButton.styleFrom(
+                                              foregroundColor: cs.error,
+                                            ),
+                                            child: Text(
+                                              l10n.backupPageDeleteTooltip,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                    if (confirm != true) return;
+
+                                    if (context.mounted) {
+                                      Navigator.of(context).pop();
+                                    }
+                                    if (context.mounted) {
+                                      showDialog(
+                                        context: context,
+                                        barrierDismissible: false,
+                                        builder: (ctx) =>
+                                            const LoadingDialogCard(),
+                                      );
+                                    }
+                                    try {
+                                      final newList = await supabaseVm
+                                          .deleteAndReload(item);
+                                      if (context.mounted) {
+                                        Navigator.of(
+                                          context, rootNavigator: true,
+                                        ).pop();
+                                      }
+                                      newList.sort((a, b) {
+                                        if (a.lastModified != null &&
+                                            b.lastModified != null) {
+                                          return b.lastModified!.compareTo(
+                                            a.lastModified!,
+                                          );
+                                        }
+                                        if (a.lastModified == null &&
+                                            b.lastModified == null) {
+                                          return b.displayName.compareTo(
+                                            a.displayName,
+                                          );
+                                        }
+                                        if (a.lastModified == null) return 1;
+                                        return -1;
+                                      });
+                                      if (mounted) {
+                                        setState(
+                                          () => _remoteSupabase = newList,
+                                        );
+                                      }
+                                      if (!context.mounted) return;
+                                      await showModalBottomSheet(
+                                        context: context,
+                                        isScrollControlled: true,
+                                        backgroundColor: cs.surface,
+                                        shape: const RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.vertical(
+                                            top: Radius.circular(16),
+                                          ),
+                                        ),
+                                        builder: (ctx) => _RemoteListSheet(
+                                          items: _remoteSupabase,
+                                          loading: false,
+                                          onDelete: (item) async {
+                                            final confirm =
+                                                await showDialog<bool>(
+                                              context: context,
+                                              builder: (dctx) => AlertDialog(
+                                                title: Text(
+                                                  l10n.backupPageDeleteConfirmTitle,
+                                                ),
+                                                content: Text(
+                                                  l10n.backupPageDeleteConfirmContent(
+                                                    item.displayName,
+                                                  ),
+                                                ),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () =>
+                                                        Navigator.of(dctx)
+                                                            .pop(false),
+                                                    child: Text(
+                                                      l10n.backupPageCancel,
+                                                    ),
+                                                  ),
+                                                  TextButton(
+                                                    onPressed: () =>
+                                                        Navigator.of(dctx)
+                                                            .pop(true),
+                                                    style: TextButton.styleFrom(
+                                                      foregroundColor: cs.error,
+                                                    ),
+                                                    child: Text(
+                                                      l10n.backupPageDeleteTooltip,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                            if (confirm == true) {
+                                              if (!ctx.mounted) return;
+                                              Navigator.of(ctx).pop();
+                                              if (context.mounted) {
+                                                showDialog(
+                                                  context: context,
+                                                  barrierDismissible: false,
+                                                  builder: (ctx) =>
+                                                      const LoadingDialogCard(),
+                                                );
+                                              }
+                                              try {
+                                                final l = await supabaseVm
+                                                    .deleteAndReload(item);
+                                                if (context.mounted) {
+                                                  Navigator.of(
+                                                    context,
+                                                    rootNavigator: true,
+                                                  ).pop();
+                                                }
+                                                l.sort((a, b) {
+                                                  if (a.lastModified != null &&
+                                                      b.lastModified != null) {
+                                                    return b.lastModified!
+                                                        .compareTo(
+                                                          a.lastModified!,
+                                                        );
+                                                  }
+                                                  if (a.lastModified == null &&
+                                                      b.lastModified == null) {
+                                                    return b.displayName
+                                                        .compareTo(
+                                                          a.displayName,
+                                                        );
+                                                  }
+                                                  if (a.lastModified == null) {
+                                                    return 1;
+                                                  }
+                                                  return -1;
+                                                });
+                                                if (mounted) {
+                                                  setState(
+                                                    () => _remoteSupabase = l,
+                                                  );
+                                                }
+                                              } catch (_) {
+                                                if (context.mounted &&
+                                                    Navigator.canPop(
+                                                      context,
+                                                    )) {
+                                                  Navigator.of(
+                                                    context,
+                                                    rootNavigator: true,
+                                                  ).pop();
+                                                }
+                                              }
+                                            }
+                                          },
+                                          onRestore: (item) async {
+                                            Navigator.of(ctx).pop();
+                                            if (!context.mounted) return;
+                                            final mode =
+                                                await _chooseImportModeDialog(
+                                                  context,
+                                                );
+                                            if (mode == null) return;
+                                            if (!context.mounted) return;
+                                            try {
+                                              await _runWithImportingOverlay(
+                                                context,
+                                                () => supabaseVm.restoreFromItem(
+                                                  item,
+                                                  mode: mode,
+                                                ),
+                                              );
+                                              if (!context.mounted) return;
+                                              showAppSnackBar(
+                                                context,
+                                                message: l10n
+                                                    .backupPageSupabaseRestored,
+                                                type: NotificationType.success,
+                                              );
+                                            } catch (e) {
+                                              if (!context.mounted) return;
+                                              showAppSnackBar(
+                                                context,
+                                                message: e.toString(),
+                                                type: NotificationType.error,
+                                              );
+                                              return;
+                                            }
+                                          },
+                                        ),
+                                      );
+                                    } catch (e) {
+                                      if (context.mounted &&
+                                          Navigator.canPop(context)) {
+                                        Navigator.of(
+                                          context,
+                                          rootNavigator: true,
+                                        ).pop();
+                                      }
+                                      if (context.mounted) {
+                                        showAppSnackBar(
+                                          context,
+                                          message: e.toString(),
+                                          type: NotificationType.error,
+                                        );
+                                      }
+                                    }
+                                  },
+                                  onRestore: (item) async {
+                                    Navigator.of(ctx).pop();
+                                    if (!context.mounted) return;
+                                    final mode = await _chooseImportModeDialog(
+                                      context,
+                                    );
+                                    if (mode == null) return;
+                                    if (!context.mounted) return;
+                                    try {
+                                      await _runWithImportingOverlay(
+                                        context,
+                                        () => supabaseVm.restoreFromItem(
+                                          item,
+                                          mode: mode,
+                                        ),
+                                      );
+                                      if (!context.mounted) return;
+                                      showAppSnackBar(
+                                        context,
+                                        message: l10n
+                                            .backupPageSupabaseRestored,
+                                        type: NotificationType.success,
+                                      );
+                                    } catch (e) {
+                                      if (!context.mounted) return;
+                                      showAppSnackBar(
+                                        context,
+                                        message: e.toString(),
+                                        type: NotificationType.error,
+                                      );
+                                    }
+                                  },
+                                ),
+                              );
+                            },
+                    ),
+                    _iosDivider(context),
+                    _iosNavRow(
+                      context,
+                      icon: Lucide.Upload,
+                      label: l10n.backupPageBackupNow,
+                      onTap: supabaseVm.busy
+                          ? null
+                          : () async {
+                              await _runWithExportingOverlay(
+                                context,
+                                () => supabaseVm.backup(),
+                              );
+                              if (!context.mounted) return;
+                              final rawMessage = supabaseVm.message;
+                              final message =
+                                  rawMessage ?? l10n.backupPageSupabaseUploaded;
+                              showAppSnackBar(
+                                context,
+                                message: message,
+                                type: NotificationType.info,
+                              );
+                            },
+                    ),
+                  ],
+                ),
+
+                // Section 5: Local Backup
                 header(l10n.backupPageLocalBackup),
                 _iosSectionCard(
                   children: [
@@ -1198,14 +1585,12 @@ class _BackupPageState extends State<BackupPage> {
                       icon: Lucide.Box,
                       label: l10n.backupPageImportFromCherryStudio,
                       onTap: () async {
-                        // 1) Warn user that Cherry import is experimental
                         final acknowledged = await _confirmCherryImport(
                           context,
                         );
                         if (acknowledged != true) return;
 
                         if (!context.mounted) return;
-                        // Pick Cherry Studio backup (.zip or .bak)
                         final result = await FilePicker.platform.pickFiles(
                           type: FileType.custom,
                           allowedExtensions: ['zip', 'bak'],
@@ -1223,7 +1608,6 @@ class _BackupPageState extends State<BackupPage> {
                             final settings = context.read<SettingsProvider>();
                             final cs = context.read<ChatService>();
                             final file = File(path);
-                            // Defer import to service
                             final res =
                                 await CherryImporter.importFromCherryStudio(
                                   file: file,
@@ -1273,7 +1657,6 @@ class _BackupPageState extends State<BackupPage> {
                       icon: Lucide.Box,
                       label: l10n.backupPageImportFromChatbox,
                       onTap: () async {
-                        // Pick Chatbox exported json
                         final result = await FilePicker.platform.pickFiles(
                           type: FileType.custom,
                           allowedExtensions: ['json'],
@@ -1450,6 +1833,24 @@ class _BackupPageState extends State<BackupPage> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (ctx) => _S3SettingsSheet(settings: settings, vm: vm, cfg: cfg),
+    );
+  }
+
+  Future<void> _showSupabaseSettingsSheet(
+    BuildContext context,
+    SettingsProvider settings,
+    SupabaseBackupProvider vm,
+    SupabaseBackupConfig cfg,
+  ) async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) =>
+          _SupabaseSettingsSheet(settings: settings, vm: vm, cfg: cfg),
     );
   }
 }
@@ -1770,7 +2171,7 @@ Widget _iosNavRow(
                     style: TextStyle(
                       fontSize: 15,
                       color: c,
-                    ), //, fontWeight: FontWeight.w500),
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1920,7 +2321,7 @@ Widget _iosSwitchRow(
                 ],
                 Expanded(
                   child: Text(label, style: TextStyle(fontSize: 15, color: c)),
-                ), //, fontWeight: FontWeight.w500))),
+                ),
                 IosSwitch(value: value, onChanged: onChanged),
               ],
             ),
@@ -2219,7 +2620,6 @@ class _WebDavSettingsSheetState extends State<_WebDavSettingsSheet> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Drag handle
               Center(
                 child: Container(
                   width: 40,
@@ -2231,8 +2631,6 @@ class _WebDavSettingsSheetState extends State<_WebDavSettingsSheet> {
                 ),
               ),
               const SizedBox(height: 12),
-
-              // Header: Close (X) - Title (center) - Save (text)
               Row(
                 children: [
                   _TactileIconButton(
@@ -2274,8 +2672,6 @@ class _WebDavSettingsSheetState extends State<_WebDavSettingsSheet> {
                 ],
               ),
               const SizedBox(height: 16),
-
-              // Input fields
               _InputRow(
                 label: l10n.backupPageWebDavServerUrl,
                 controller: _urlCtrl,
@@ -2441,7 +2837,6 @@ class _S3SettingsSheetState extends State<_S3SettingsSheet> {
                 ],
               ),
               const SizedBox(height: 16),
-
               _InputRow(
                 label: l10n.backupPageS3Endpoint,
                 controller: _endpointCtrl,
@@ -2519,6 +2914,121 @@ class _S3SettingsSheetState extends State<_S3SettingsSheet> {
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SupabaseSettingsSheet extends StatefulWidget {
+  const _SupabaseSettingsSheet({
+    required this.settings,
+    required this.vm,
+    required this.cfg,
+  });
+
+  final SettingsProvider settings;
+  final SupabaseBackupProvider vm;
+  final SupabaseBackupConfig cfg;
+
+  @override
+  State<_SupabaseSettingsSheet> createState() => _SupabaseSettingsSheetState();
+}
+
+class _SupabaseSettingsSheetState extends State<_SupabaseSettingsSheet> {
+  late final TextEditingController _bucketCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _bucketCtrl = TextEditingController(
+      text: widget.cfg.bucketName.isEmpty
+          ? 'kelivo-backups'
+          : widget.cfg.bucketName,
+    );
+  }
+
+  @override
+  void dispose() {
+    _bucketCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final cs = Theme.of(context).colorScheme;
+
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 12,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: cs.onSurface.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _TactileIconButton(
+                    icon: Lucide.X,
+                    color: cs.onSurface,
+                    size: 20,
+                    onTap: () => Navigator.of(context).pop(),
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        l10n.backupPageSupabaseSettings,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  _TactileTextButton(
+                    label: l10n.backupPageSave,
+                    color: cs.primary,
+                    onTap: () async {
+                      final newCfg = widget.cfg.copyWith(
+                        bucketName: _bucketCtrl.text.trim().isEmpty
+                            ? 'kelivo-backups'
+                            : _bucketCtrl.text.trim(),
+                      );
+                      await widget.settings.setSupabaseBackupConfig(newCfg);
+                      widget.vm.updateConfig(newCfg);
+                      if (context.mounted) {
+                        Navigator.of(context).pop();
+                      }
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _InputRow(
+                label: l10n.backupPageSupabaseBucket,
+                controller: _bucketCtrl,
+                hint: l10n.backupPageSupabaseBucketHint,
               ),
               const SizedBox(height: 16),
             ],
