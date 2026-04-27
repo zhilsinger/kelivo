@@ -60,9 +60,6 @@ class ChatInputBar extends StatefulWidget {
     this.controller,
     this.mediaController,
     this.loading = false,
-    this.hasQueuedInput = false,
-    this.queuedPreviewText,
-    this.onCancelQueuedInput,
     this.reasoningActive = false,
     this.reasoningBudget,
     this.supportsReasoning = true,
@@ -109,9 +106,6 @@ class ChatInputBar extends StatefulWidget {
   final TextEditingController? controller;
   final ChatInputBarController? mediaController;
   final bool loading;
-  final bool hasQueuedInput;
-  final String? queuedPreviewText;
-  final VoidCallback? onCancelQueuedInput;
   final bool reasoningActive;
   final int? reasoningBudget;
   final bool supportsReasoning;
@@ -162,8 +156,6 @@ class _ChatInputBarState extends State<ChatInputBar>
   );
   bool _suppressContextMenu = false;
   bool _isSubmitting = false;
-
-  bool get _composerLocked => widget.hasQueuedInput;
 
   void _onTextChanged(String _) => setState(() {});
 
@@ -300,7 +292,7 @@ class _ChatInputBarState extends State<ChatInputBar>
     }
   }
 
-  void _insertNewlineAtCursor() { /* unchanged - elided for brevity */
+  void _insertNewlineAtCursor() {
     final value = _controller.value;
     final selection = value.selection;
     final text = value.text;
@@ -551,7 +543,7 @@ class _ChatInputBarState extends State<ChatInputBar>
     return KeyEventResult.handled;
   }
 
-  Future<void> _handlePasteFromClipboard() async { /* unchanged - elided */
+  Future<void> _handlePasteFromClipboard() async {
     try {
       final clipboard = SystemClipboard.instance;
       if (clipboard != null) {
@@ -771,10 +763,6 @@ class _ChatInputBarState extends State<ChatInputBar>
     const double plusButtonW = 32;
 
     final l10n = AppLocalizations.of(context)!;
-    VoidCallback? lockTap(VoidCallback? callback) {
-      if (_composerLocked) return null;
-      return callback;
-    }
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -788,14 +776,14 @@ class _ChatInputBarState extends State<ChatInputBar>
               tooltip: l10n.chatInputBarSelectModelTooltip,
               icon: Lucide.Boxes,
               modelIcon: true,
-              onTap: lockTap(widget.onSelectModel),
-              onLongPress: lockTap(widget.onLongPressSelectModel),
+              onTap: widget.onSelectModel,
+              onLongPress: widget.onLongPressSelectModel,
               child: widget.modelIcon,
             ),
             menu: DesktopContextMenuItem(
               icon: Lucide.Boxes,
               label: l10n.chatInputBarSelectModelTooltip,
-              onTap: lockTap(widget.onSelectModel),
+              onTap: widget.onSelectModel,
             ),
           ),
         );
@@ -839,7 +827,7 @@ class _ChatInputBarState extends State<ChatInputBar>
                   tooltip: l10n.chatInputBarOnlineSearchTooltip,
                   icon: Lucide.Globe,
                   active: false,
-                  onTap: lockTap(widget.onOpenSearch),
+                  onTap: widget.onOpenSearch,
                 );
               }
               if (builtinSearchActive) {
@@ -847,14 +835,14 @@ class _ChatInputBarState extends State<ChatInputBar>
                   tooltip: l10n.chatInputBarOnlineSearchTooltip,
                   icon: Lucide.Search,
                   active: true,
-                  onTap: lockTap(widget.onOpenSearch),
+                  onTap: widget.onOpenSearch,
                 );
               }
               return _CompactIconButton(
                 tooltip: l10n.chatInputBarOnlineSearchTooltip,
                 icon: Lucide.Globe,
                 active: true,
-                onTap: lockTap(widget.onOpenSearch),
+                onTap: widget.onOpenSearch,
                 childBuilder: (c) {
                   final asset = brandAsset;
                   if (asset != null) {
@@ -885,27 +873,27 @@ class _ChatInputBarState extends State<ChatInputBar>
                 return DesktopContextMenuItem(
                   icon: Lucide.Globe,
                   label: l10n.chatInputBarOnlineSearchTooltip,
-                  onTap: lockTap(widget.onOpenSearch),
+                  onTap: widget.onOpenSearch,
                 );
               }
               if (builtinSearchActive) {
                 return DesktopContextMenuItem(
                   icon: Lucide.Search,
                   label: l10n.chatInputBarOnlineSearchTooltip,
-                  onTap: lockTap(widget.onOpenSearch),
+                  onTap: widget.onOpenSearch,
                 );
               }
               if (brandAsset != null && brandAsset.endsWith('.svg')) {
                 return DesktopContextMenuItem(
                   svgAsset: brandAsset,
                   label: l10n.chatInputBarOnlineSearchTooltip,
-                  onTap: lockTap(widget.onOpenSearch),
+                  onTap: widget.onOpenSearch,
                 );
               }
               return DesktopContextMenuItem(
                 icon: Lucide.Globe,
                 label: l10n.chatInputBarOnlineSearchTooltip,
-                onTap: lockTap(widget.onOpenSearch),
+                onTap: widget.onOpenSearch,
               );
             }(),
           ),
@@ -919,7 +907,7 @@ class _ChatInputBarState extends State<ChatInputBar>
                 tooltip: l10n.chatInputBarReasoningStrengthTooltip,
                 icon: Lucide.Brain,
                 active: widget.reasoningActive,
-                onTap: lockTap(widget.onConfigureReasoning),
+                onTap: widget.onConfigureReasoning,
                 childBuilder: (c) => ReasoningIcons.budgetIcon(
                   widget.reasoningBudget,
                   size: 20,
@@ -929,7 +917,7 @@ class _ChatInputBarState extends State<ChatInputBar>
               menu: DesktopContextMenuItem(
                 svgAsset: ReasoningIcons.assetForBudget(widget.reasoningBudget),
                 label: l10n.chatInputBarReasoningStrengthTooltip,
-                onTap: lockTap(widget.onConfigureReasoning),
+                onTap: widget.onConfigureReasoning,
               ),
             ),
           );
@@ -943,13 +931,13 @@ class _ChatInputBarState extends State<ChatInputBar>
                 tooltip: l10n.chatInputBarMcpServersTooltip,
                 icon: Lucide.Hammer,
                 active: widget.mcpActive,
-                onTap: lockTap(widget.onOpenMcp),
-                onLongPress: lockTap(widget.onLongPressMcp),
+                onTap: widget.onOpenMcp,
+                onLongPress: widget.onLongPressMcp,
               ),
               menu: DesktopContextMenuItem(
                 icon: Lucide.Hammer,
                 label: l10n.chatInputBarMcpServersTooltip,
-                onTap: lockTap(widget.onOpenMcp),
+                onTap: widget.onOpenMcp,
               ),
             ),
           );
@@ -962,13 +950,13 @@ class _ChatInputBarState extends State<ChatInputBar>
               builder: () => _CompactIconButton(
                 tooltip: l10n.chatInputBarQuickPhraseTooltip,
                 icon: Lucide.Zap,
-                onTap: lockTap(widget.onQuickPhrase),
-                onLongPress: lockTap(widget.onLongPressQuickPhrase),
+                onTap: widget.onQuickPhrase,
+                onLongPress: widget.onLongPressQuickPhrase,
               ),
               menu: DesktopContextMenuItem(
                 icon: Lucide.Zap,
                 label: l10n.chatInputBarQuickPhraseTooltip,
-                onTap: lockTap(widget.onQuickPhrase),
+                onTap: widget.onQuickPhrase,
               ),
             ),
           );
@@ -981,12 +969,12 @@ class _ChatInputBarState extends State<ChatInputBar>
               builder: () => _CompactIconButton(
                 tooltip: l10n.bottomToolsSheetCamera,
                 icon: Lucide.Camera,
-                onTap: lockTap(widget.onPickCamera),
+                onTap: widget.onPickCamera,
               ),
               menu: DesktopContextMenuItem(
                 icon: Lucide.Camera,
                 label: l10n.bottomToolsSheetCamera,
-                onTap: lockTap(widget.onPickCamera),
+                onTap: widget.onPickCamera,
               ),
             ),
           );
@@ -999,12 +987,12 @@ class _ChatInputBarState extends State<ChatInputBar>
               builder: () => _CompactIconButton(
                 tooltip: l10n.bottomToolsSheetPhotos,
                 icon: Lucide.Image,
-                onTap: lockTap(widget.onPickPhotos),
+                onTap: widget.onPickPhotos,
               ),
               menu: DesktopContextMenuItem(
                 icon: Lucide.Image,
                 label: l10n.bottomToolsSheetPhotos,
-                onTap: lockTap(widget.onPickPhotos),
+                onTap: widget.onPickPhotos,
               ),
             ),
           );
@@ -1017,12 +1005,12 @@ class _ChatInputBarState extends State<ChatInputBar>
               builder: () => _CompactIconButton(
                 tooltip: l10n.bottomToolsSheetUpload,
                 icon: Lucide.Paperclip,
-                onTap: lockTap(widget.onUploadFiles),
+                onTap: widget.onUploadFiles,
               ),
               menu: DesktopContextMenuItem(
                 icon: Lucide.Paperclip,
                 label: l10n.bottomToolsSheetUpload,
-                onTap: lockTap(widget.onUploadFiles),
+                onTap: widget.onUploadFiles,
               ),
             ),
           );
@@ -1036,13 +1024,13 @@ class _ChatInputBarState extends State<ChatInputBar>
                 tooltip: l10n.instructionInjectionTitle,
                 icon: Lucide.Layers,
                 active: widget.learningModeActive,
-                onTap: lockTap(widget.onToggleLearningMode),
-                onLongPress: lockTap(widget.onLongPressLearning),
+                onTap: widget.onToggleLearningMode,
+                onLongPress: widget.onLongPressLearning,
               ),
               menu: DesktopContextMenuItem(
                 icon: Lucide.Layers,
                 label: l10n.instructionInjectionTitle,
-                onTap: lockTap(widget.onToggleLearningMode),
+                onTap: widget.onToggleLearningMode,
               ),
             ),
           );
@@ -1056,12 +1044,12 @@ class _ChatInputBarState extends State<ChatInputBar>
                 tooltip: l10n.worldBookTitle,
                 icon: Lucide.BookOpen,
                 active: widget.worldBookActive,
-                onTap: lockTap(widget.onOpenWorldBook),
+                onTap: widget.onOpenWorldBook,
               ),
               menu: DesktopContextMenuItem(
                 icon: Lucide.BookOpen,
                 label: l10n.worldBookTitle,
-                onTap: lockTap(widget.onOpenWorldBook),
+                onTap: widget.onOpenWorldBook,
               ),
             ),
           );
@@ -1077,12 +1065,12 @@ class _ChatInputBarState extends State<ChatInputBar>
                   DesktopContextMenuItem(
                     icon: Lucide.package2,
                     label: l10n.compressContext,
-                    onTap: lockTap(widget.onCompressContext),
+                    onTap: widget.onCompressContext,
                   ),
                 DesktopContextMenuItem(
                   icon: Lucide.Eraser,
                   label: l10n.bottomToolsSheetClearContext,
-                  onTap: lockTap(widget.onClearContext),
+                  onTap: widget.onClearContext,
                 ),
               ],
             );
@@ -1096,13 +1084,13 @@ class _ChatInputBarState extends State<ChatInputBar>
                 child: _CompactIconButton(
                   tooltip: l10n.contextManagement,
                   icon: Lucide.Eraser,
-                  onTap: _composerLocked ? null : showContextMenu,
+                  onTap: showContextMenu,
                 ),
               ),
               menu: DesktopContextMenuItem(
                 icon: Lucide.Eraser,
                 label: l10n.contextManagement,
-                onTap: _composerLocked ? null : showContextMenu,
+                onTap: showContextMenu,
               ),
             ),
           );
@@ -1115,12 +1103,12 @@ class _ChatInputBarState extends State<ChatInputBar>
               builder: () => _CompactIconButton(
                 tooltip: l10n.miniMapTooltip,
                 icon: Lucide.Map,
-                onTap: lockTap(widget.onOpenMiniMap),
+                onTap: widget.onOpenMiniMap,
               ),
               menu: DesktopContextMenuItem(
                 icon: Lucide.Map,
                 label: l10n.miniMapTooltip,
-                onTap: lockTap(widget.onOpenMiniMap),
+                onTap: widget.onOpenMiniMap,
               ),
             ),
           );
@@ -1134,12 +1122,12 @@ class _ChatInputBarState extends State<ChatInputBar>
                 tooltip: l10n.chatInputBarOcrTooltip,
                 icon: Lucide.Eye,
                 active: widget.ocrActive,
-                onTap: lockTap(widget.onToggleOcr),
+                onTap: widget.onToggleOcr,
               ),
               menu: DesktopContextMenuItem(
                 icon: Lucide.Eye,
                 label: l10n.chatInputBarOcrTooltip,
-                onTap: lockTap(widget.onToggleOcr),
+                onTap: widget.onToggleOcr,
               ),
             ),
           );
@@ -1421,14 +1409,16 @@ class _ChatInputBarState extends State<ChatInputBar>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (widget.hasQueuedInput) ...[
+            if (widget.queueCount > 0) ...[
               _QueuedInputBanner(
                 label: AppLocalizations.of(context)!.chatInputBarQueuedPending,
-                previewText: widget.queuedPreviewText,
+                previewText: widget.queueCount == 1
+                    ? null
+                    : '${widget.queueCount} ${AppLocalizations.of(context)!.chatInputBarOpenQueue}',
                 cancelLabel: AppLocalizations.of(
                   context,
                 )!.chatInputBarQueuedCancel,
-                onCancel: widget.onCancelQueuedInput,
+                onCancel: widget.onOpenQueuePanel,
               ),
               const SizedBox(height: AppSpacing.xs),
             ],
@@ -1588,7 +1578,7 @@ class _ChatInputBarState extends State<ChatInputBar>
                                         controller: _controller,
                                         focusNode: widget.focusNode,
                                         onChanged: _onTextChanged,
-                                        readOnly: _composerLocked,
+                                        readOnly: false,
                                         minLines: 1,
                                         maxLines: _isExpanded ? 25 : 5,
                                         keyboardType: TextInputType.multiline,
@@ -1674,9 +1664,7 @@ class _ChatInputBarState extends State<ChatInputBar>
                                     )!.chatInputBarMoreTooltip,
                                     icon: Lucide.Plus,
                                     active: widget.moreOpen,
-                                    onTap: _composerLocked
-                                        ? null
-                                        : widget.onMore,
+                                    onTap: widget.onMore,
                                     childBuilder: (c) => AnimatedSwitcher(
                                       duration: const Duration(
                                         milliseconds: 200,
@@ -1706,8 +1694,8 @@ class _ChatInputBarState extends State<ChatInputBar>
                                   ),
                                   const SizedBox(width: 8),
                                 ],
-                                // === Queue button (separate from stop/send) ===
-                                if (widget.queueCount > 0 && widget.loading) ...[
+                                // === Queue button ===
+                                if (widget.queueCount > 0) ...[
                                   _CompactIconButton(
                                     tooltip: AppLocalizations.of(
                                       context,
