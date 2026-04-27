@@ -1064,21 +1064,34 @@ class AppLocalizationsZh extends AppLocalizations {
   String get assistantSettingsCopySuffix => '副本';
 
   @override
-  String get assistantSettingsCloneSheetTitle => '克隆助手';
-
-  @override
-  String get assistantSettingsCloneSheetMakeClones => '创建克隆';
-
-  @override
-  String assistantSettingsCloneSuccessMultiple(int count) {
-    return '已克隆 $count 个助手';
-  }
-
-  @override
-  String get assistantEditExportButton => '导出配置';
-
-  @override
-  String get assistantEditExportSuccess => '助手配置已导出';
-
-  @override
   String get assistantSettingsDeleteButton => '删除';
+
+  @override
+  String get assistantSettingsEditButton => '编辑';
+
+  @override
+  String get assistantSettingsAddSheetTitle => '助手名称';
+
+  @override
+  String get assistantSettingsAddSheetHint => '输入助手名称';
+
+  @override
+  String get assistantSettingsAddSheetCancel => '取消';
+
+  @override
+  String get assistantSettingsAddSheetSave => '保存';
+
+  @override
+  String get desktopAssistantsListTitle => '助手列表';
+
+  @override
+  String get desktopSidebarTabAssistants => '助手';
+
+  @override
+  String get desktopSidebarTabTopics => '话题';
+
+  @override
+  String get desktopTrayMenuShowWindow => '显示窗口';
+
+  @override
+  String get desktopTrayMenuExit => '退出';
