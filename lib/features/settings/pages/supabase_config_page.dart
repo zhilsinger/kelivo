@@ -18,6 +18,7 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
   bool _testing = false;
   bool? _testResult;
   bool _obscureKey = true;
+  Map<String, TableValidationResult> _tableResults = {};
 
   @override
   void initState() {
@@ -42,13 +43,30 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
     setState(() {
       _testing = true;
       _testResult = null;
+      _tableResults = {};
     });
 
+    final settings = context.read<SettingsProvider>();
     final client = SupabaseClientService.instance;
-    client.configure(url, key);
-    final ok = await client.testConnection();
+    client.configure(url, key, userId: settings.supabaseUserId);
+
+    // First, quick network test
+    final reachable = await client.testConnection();
+    if (!reachable) {
+      setState(() {
+        _testResult = false;
+        _testing = false;
+      });
+      return;
+    }
+
+    // Then validate each required table
+    final tableResults = await client.validateTables();
+    final allOk = tableResults.values.every((r) => r.exists);
+
     setState(() {
-      _testResult = ok;
+      _testResult = allOk;
+      _tableResults = tableResults;
       _testing = false;
     });
   }
@@ -56,9 +74,10 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
   Future<void> _save() async {
     final url = _urlController.text.trim();
     final key = _keyController.text.trim();
-    await context.read<SettingsProvider>().setSupabaseConfig(url, key);
+    final settings = context.read<SettingsProvider>();
+    await settings.setSupabaseConfig(url, key);
     if (url.isNotEmpty && key.isNotEmpty) {
-      SupabaseClientService.instance.configure(url, key);
+      SupabaseClientService.instance.configure(url, key, userId: settings.supabaseUserId);
     }
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -69,12 +88,16 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
   }
 
   void _clear() async {
-    await context.read<SettingsProvider>().clearSupabaseConfig();
+    final settings = context.read<SettingsProvider>();
+    await settings.clearSupabaseConfig();
     SupabaseClientService.instance.clear();
     if (mounted) {
       _urlController.clear();
       _keyController.clear();
-      setState(() => _testResult = null);
+      setState(() {
+        _testResult = null;
+        _tableResults = {};
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Cleared'), duration: Duration(seconds: 2)),
       );
@@ -100,6 +123,7 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // Status banner
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -131,6 +155,8 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
             ),
           ),
           const SizedBox(height: 16),
+
+          // URL field
           const Text('Server URL',
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
           ),
@@ -146,6 +172,8 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
             autocorrect: false,
           ),
           const SizedBox(height: 16),
+
+          // Anon Key field
           const Text('Anon Key',
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
           ),
@@ -165,6 +193,8 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
             autocorrect: false,
           ),
           const SizedBox(height: 24),
+
+          // Test button
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -178,8 +208,66 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
               label: Text(_testing ? 'Testing...' : 'Test Connection'),
             ),
           ),
-          if (_testResult != null) ...[
-            const SizedBox(height: 8),
+
+          // Table validation results
+          if (_tableResults.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Table Validation',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ..._tableResults.entries.map((entry) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      children: [
+                        Icon(
+                          entry.value.exists ? Lucide.CheckCircle : Lucide.XCircle,
+                          size: 14,
+                          color: entry.value.exists ? Colors.green : Colors.red,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(entry.key,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: cs.onSurface.withValues(alpha: 0.7),
+                          ),
+                        ),
+                        if (entry.value.error != null) ...[
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(entry.value.error!,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.red.withValues(alpha: 0.8),
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  )),
+                ],
+              ),
+            ),
+          ],
+
+          // Simple connection test result (when table validation not run)
+          if (_testResult != null && _tableResults.isEmpty) ...[\n            const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -200,6 +288,40 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
             ),
           ],
           const SizedBox(height: 16),
+
+          // Auto-sync toggle
+          SwitchListTile(
+            title: const Text('Auto-sync', style: TextStyle(fontSize: 14)),
+            subtitle: Text(
+              'Automatically sync threads to Supabase after each message',
+              style: TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.6)),
+            ),
+            value: settings.supabaseAutoSyncEnabled,
+            onChanged: settings.supabaseConfigured
+                ? (v) => settings.setSupabaseAutoSyncEnabled(v)
+                : null,
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
+
+          // AI Memory toggle
+          SwitchListTile(
+            title: const Text('AI Memory Indexing', style: TextStyle(fontSize: 14)),
+            subtitle: Text(
+              'Index message chunks for semantic search (requires embedding provider)',
+              style: TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.6)),
+            ),
+            value: settings.supabaseAiMemoryEnabled,
+            onChanged: settings.supabaseConfigured
+                ? (v) => settings.setSupabaseAiMemoryEnabled(v)
+                : null,
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
+
+          const SizedBox(height: 16),
+
+          // Save / Clear buttons
           Row(
             children: [
               Expanded(
@@ -220,6 +342,8 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
             ],
           ),
           const SizedBox(height: 24),
+
+          // Info box
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -233,8 +357,8 @@ class _SupabaseConfigPageState extends State<SupabaseConfigPage> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Threads backed up here will auto-sync to Supabase after import. '
-                    'You can find your project URL and anon key in your Supabase project dashboard under Settings > API.',
+                    'Run the SQL migration in your Supabase project SQL Editor first (supabase/migrations/001_base_schema.sql). '
+                    'Then test connection to validate all required tables exist with correct permissions.',
                     style: TextStyle(
                       fontSize: 12,
                       color: cs.onSurface.withValues(alpha: 0.6),
