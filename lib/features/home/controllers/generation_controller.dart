@@ -5,6 +5,8 @@ import '../../../core/models/chat_message.dart';
 import '../../../core/providers/model_provider.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/chat/chat_service.dart';
+import '../../../core/services/agent_tools/checklist_tool_service.dart';
+import '../../../core/services/agent_tools/timer_tool_service.dart';
 import '../../../utils/assistant_regex.dart';
 import '../../../core/models/assistant_regex.dart';
 import '../services/message_builder_service.dart';
@@ -30,9 +32,15 @@ class GenerationController {
     required this.contextProvider,
     required this.onStateChanged,
     required this.getTitleForLocale,
-  }) : toolHandlerService = ToolHandlerService(
-         contextProvider: contextProvider,
-       );
+    ChecklistToolService? checklistToolService,
+    TimerToolService? timerToolService,
+  })  : _checklistToolService = checklistToolService,
+        _timerToolService = timerToolService,
+        toolHandlerService = ToolHandlerService(
+          contextProvider: contextProvider,
+          checklistToolService: checklistToolService,
+          timerToolService: timerToolService,
+        );
 
   final ChatService chatService;
   final ChatController chatController;
@@ -41,6 +49,9 @@ class GenerationController {
 
   /// Service for handling tool definitions and tool call execution
   final ToolHandlerService toolHandlerService;
+
+  final ChecklistToolService? _checklistToolService;
+  final TimerToolService? _timerToolService;
 
   /// Build context (used for accessing providers)
   final BuildContext contextProvider;
